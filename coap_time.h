@@ -104,6 +104,33 @@ typedef int coap_tick_diff_t;
 extern time_t clock_offset;
 #endif /* WITH_POSIX */
 
+#ifdef WITH_STNODE
+/* MWAS: based on lwIP implementation above. Uses chTimeNow() function from ChibiOS. */
+#include "ch.h"
+
+#define COAP_TICKS_PER_SECOND CH_FREQUENCY
+
+typedef systime_t coap_tick_t;
+typedef int coap_tick_diff_t; /* TODO: MWAS: maybe it's better to use int32 */
+
+extern systime_t clock_offset;
+
+static inline void coap_ticks_impl(coap_tick_t *t)
+{
+	*t = chTimeNow();
+}
+
+static inline void coap_clock_init_impl(void)
+{
+	clock_offset = chTimeNow();
+}
+
+#define coap_clock_init coap_clock_init_impl
+
+#define coap_ticks coap_ticks_impl
+
+#endif /* WITH_STNODE */
+
 #ifndef coap_clock_init
 static inline void
 coap_clock_init_impl(void) {

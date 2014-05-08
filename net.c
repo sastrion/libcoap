@@ -45,6 +45,12 @@
 #include "block.h"
 #include "libcoap/net.h"
 
+#ifdef WITH_STNODE
+#include "system.h"
+
+systime_t clock_offset;
+
+#endif /* WITH_STNODE */
 #if defined(WITH_POSIX)
 
 time_t clock_offset;
