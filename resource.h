@@ -38,7 +38,7 @@
 #include "async.h"
 #include "str.h"
 #include "pdu.h"
-#include "net.h"
+#include "libcoap/net.h"
 #include "subscribe.h"
 
 /** Definition of message handler function (@sa coap_resource_t). */

@@ -26,7 +26,7 @@
 #endif
 
 #include "debug.h"
-#include "net.h"
+#include "libcoap/net.h"
 
 #ifdef WITH_CONTIKI
 # ifndef DEBUG

@@ -43,7 +43,7 @@
 #include "option.h"
 #include "encode.h"
 #include "block.h"
-#include "net.h"
+#include "libcoap/net.h"
 
 #if defined(WITH_POSIX)
 

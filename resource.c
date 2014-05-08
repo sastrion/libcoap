@@ -7,7 +7,7 @@
  */
 
 #include "config.h"
-#include "net.h"
+#include "libcoap/net.h"
 #include "debug.h"
 #include "resource.h"
 #include "subscribe.h"
