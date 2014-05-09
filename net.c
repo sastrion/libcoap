@@ -50,6 +50,15 @@
 
 systime_t clock_offset;
 
+static inline coap_queue_t *
+coap_malloc_node() {
+  return (coap_queue_t *)sys_malloc(sizeof(coap_queue_t));
+}
+
+static inline void
+coap_free_node(coap_queue_t *node) {
+  sys_free(node);
+}
 #endif /* WITH_STNODE */
 #if defined(WITH_POSIX)
 
@@ -314,6 +323,9 @@ coap_new_context(
   if (initialized)
     return NULL;
 #endif /* WITH_CONTIKI */
+#ifdef WITH_STNODE
+  coap_context_t *c = sys_malloc( sizeof( coap_context_t ) );
+#endif /* WITH_STNODE */
 
   if (!listen_addr) {
     coap_log(LOG_EMERG, "no listen address specified\n");
@@ -418,6 +430,16 @@ coap_new_context(
   c->timer_configured = 0;
 
   return c;
+#endif
+#ifdef WITH_STNODE
+  /* TODO: MWAS: here two things should happen:
+   * 1. network socket should be created
+   * 2. binding of local address to socket should happen
+   * st-node allows only for connected UDP sockets.
+   * To create a socket, destination address is necessary.
+   * That requires either declaring extern address or passing address
+   * as an argument. TBD
+   */
 #endif
 }
 
@@ -841,6 +863,12 @@ coap_read( coap_context_t *ctx ) {
 #if defined(WITH_LWIP) || defined(WITH_CONTIKI)
   char *buf;
 #endif
+#ifdef WITH_STNODE
+/*
+ * TODO: MWAS: This is a temporary solution - to be investigated
+ */
+  char *buf;
+#endif
   coap_hdr_t *pdu;
   ssize_t bytes_read = -1;
   coap_address_t src, dst;
@@ -1154,7 +1182,7 @@ get_wkc_len(coap_context_t *context, coap_opt_t *query_filter) {
   unsigned char buf[1];
   size_t len = 0;
 
-  if (print_wellknown(context, buf, &len, UINT_MAX, query_filter)
+  if (print_wellknown(context, buf, &len, UINT_MAX, query_filter) /* MWAS: UINT_MAX requires limits.h */
       & COAP_PRINT_STATUS_ERROR) {
     warn("cannot determine length of /.well-known/core\n");
     return 0;
