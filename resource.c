@@ -12,6 +12,17 @@
 #include "resource.h"
 #include "subscribe.h"
 
+#ifdef WITH_STNODE
+#include "utlist.h"
+#include "mem.h"
+#include "system.h"
+
+#define COAP_MALLOC_TYPE(Type) \
+  ((coap_##Type##_t *)sys_malloc(sizeof(coap_##Type##_t)))
+#define COAP_FREE_TYPE(Type, Object) sys_free(Object)
+
+#endif /* WITH_STNODE */
+
 #ifdef WITH_LWIP
 #include "utlist.h"
 /* mem.h is only needed for the string free calls for
@@ -463,7 +474,7 @@ coap_delete_resource(coap_context_t *context, coap_key_t key) {
   if (!resource) 
     return 0;
     
-#if defined(WITH_POSIX) || defined(WITH_LWIP)
+#if defined(WITH_POSIX) || defined(WITH_LWIP) || defined(WITH_STNODE)
 #ifdef COAP_RESOURCES_NOHASH
   LL_DELETE(context->resources, resource);
 #else
@@ -482,7 +493,10 @@ coap_delete_resource(coap_context_t *context, coap_key_t key) {
 #ifdef WITH_LWIP
   memp_free(MEMP_COAP_RESOURCE, resource);
 #endif
-#else /* not (WITH_POSIX || WITH_LWIP) */
+#ifdef WITH_STNODE
+  sys_free(resource);
+#endif
+#else /* not (WITH_POSIX || WITH_LWIP || WITH_STNODE) */
   /* delete registered attributes */
   while ( (attr = list_pop(resource->link_attr)) )
     memb_free(&attribute_storage, attr);
