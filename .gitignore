@@ -1,0 +1,16 @@
+# libcoap submodule
+*.*~
+*.o
+*.lst
+*.sym
+*.eep
+*.elf
+*.hex
+*.bin
+*.lss
+*.map
+*.log
+*.swp
+*.pyc
+
+
