@@ -125,6 +125,9 @@ typedef struct coap_context_t {
 
   uint8_t timer_configured; /**< Set to 1 when a retransmission is scheduled using lwIP timers for this context, otherwise 0. */
 #endif /* WITH_LWIP */
+#ifdef WITH_STNODE
+  net_socket_t *ns;
+#endif
 
   /**
    * The last message id that was used is stored in this field.  The
@@ -183,7 +186,11 @@ coap_queue_t *coap_peek_next( coap_context_t *context );
 coap_queue_t *coap_pop_next( coap_context_t *context );
 
 /** Creates a new coap_context_t object that will hold the CoAP stack status.  */
+#ifndef WITH_STNODE
 coap_context_t *coap_new_context(const coap_address_t *listen_addr);
+#else /* WITH_STNODE */
+coap_context_t *coap_new_context(const coap_address_t *dest_addr);
+#endif /* WITH_STNODE */
 
 /** 
  * Returns a new message id and updates @p context->message_id

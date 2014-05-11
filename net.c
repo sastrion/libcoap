@@ -47,6 +47,7 @@
 
 #ifdef WITH_STNODE
 #include "system.h"
+#include "net.h"
 
 systime_t clock_offset;
 
@@ -307,9 +308,21 @@ is_wkc(coap_key_t k) {
 }
 #endif
 
+#ifndef WITH_STNODE
 coap_context_t *
 coap_new_context(
   const coap_address_t *listen_addr) {
+#else /* WITH_STNODE */
+	/*
+	 * MWAS: st-node network interface doesn't support
+	 * specifying address for listening socket.
+	 * Also st-node supoorts only connected sockets -
+	 * destination address is required
+	 */
+coap_context_t *
+coap_new_context(
+  const coap_address_t *dest_addr) {
+#endif /* WITH_STNODE */
 #ifdef WITH_POSIX
   coap_context_t *c = coap_malloc( sizeof( coap_context_t ) );
   int reuse = 1;
@@ -327,17 +340,25 @@ coap_new_context(
   coap_context_t *c = sys_malloc( sizeof( coap_context_t ) );
 #endif /* WITH_STNODE */
 
+#ifndef WITH_STNODE
   if (!listen_addr) {
     coap_log(LOG_EMERG, "no listen address specified\n");
     return NULL;
   }
-
+#else /* WITH_STNODE */
+  if (!dest_addr) {
+    coap_log(LOG_EMERG, "no destination address specified\n");
+    return NULL;
+  }
+#endif /* WITH_STNODE */
   coap_clock_init();
 #ifdef WITH_LWIP
   prng_init(LWIP_RAND());
-#else /* WITH_LWIP */
+#elif WITH_STNODE
+  prng_init((unsigned long)dest_addr ^ clock_offset);
+#else
   prng_init((unsigned long)listen_addr ^ clock_offset);
-#endif /* WITH_LWIP */
+#endif
 
 #ifndef WITH_CONTIKI
   if ( !c ) {
@@ -440,6 +461,10 @@ coap_new_context(
    * That requires either declaring extern address or passing address
    * as an argument. TBD
    */
+	c->ns = net_connect(dest_addr, COAP_DEFAULT_PORT, NET_UDP);
+	if (!c->ns) {
+		return NULL;
+	}
 #endif
 }
 
