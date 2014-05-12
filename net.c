@@ -470,12 +470,12 @@ coap_new_context(
 
 void
 coap_free_context( coap_context_t *context ) {
-#if defined(WITH_POSIX) || defined(WITH_LWIP)
+#if defined(WITH_POSIX) || defined(WITH_LWIP) || defined(WITH_STNODE)
   coap_resource_t *res;
 #ifndef COAP_RESOURCES_NOHASH
   coap_resource_t *rtmp;
 #endif
-#endif /* WITH_POSIX || WITH_LWIP */
+#endif /* WITH_POSIX || WITH_LWIP || WITH_STNODE */
   if ( !context )
     return;
 
@@ -487,7 +487,7 @@ coap_free_context( coap_context_t *context ) {
   coap_retransmittimer_restart(context);
 #endif
 
-#if defined(WITH_POSIX) || defined(WITH_LWIP)
+#if defined(WITH_POSIX) || defined(WITH_LWIP) || defined(WITH_STNODE)
 #ifdef COAP_RESOURCES_NOHASH
   LL_FOREACH(context->resources, res) {
 #else
@@ -495,7 +495,7 @@ coap_free_context( coap_context_t *context ) {
 #endif
     coap_delete_resource(context, res->key);
   }
-#endif /* WITH_POSIX || WITH_LWIP */
+#endif /* WITH_POSIX || WITH_LWIP || WITH_STNODE */
 
 #ifdef WITH_POSIX
   /* coap_delete_list(context->subscriptions); */
@@ -510,6 +510,10 @@ coap_free_context( coap_context_t *context ) {
   memset(&the_coap_context, 0, sizeof(coap_context_t));
   initialized = 0;
 #endif /* WITH_CONTIKI */
+#ifdef WITH_STNODE
+  net_disconnect(context->ns);
+  sys_free( context );
+#endif /* WITH_STNODE */
 }
 
 int
@@ -572,8 +576,9 @@ coap_transaction_id(const coap_address_t *peer, const coap_pdu_t *pdu,
     return;
   }
 #endif
-#if defined(WITH_LWIP) || defined(WITH_CONTIKI)
+#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_STNODE)
     /* FIXME: with lwip, we can do better */
+    /* TODO: MWAS: check better options */
     coap_hash((const unsigned char *)&peer->port, sizeof(peer->port), h);
     coap_hash((const unsigned char *)&peer->addr, sizeof(peer->addr), h);  
 #endif /* WITH_LWIP || WITH_CONTIKI */
