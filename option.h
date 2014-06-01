@@ -248,9 +248,13 @@ coap_opt_t *coap_check_option(coap_pdu_t *pdu,
  * @param length The actual length value to encode.
  * @return The number of bytes used or @c 0 on error.
  */
+
 size_t coap_opt_setheader(coap_opt_t *opt, size_t maxlen, 
 			  unsigned short delta, size_t length);
-
+#if defined(WITH_STNODE)
+size_t coap_opt_setheader_to_mbuf(coap_pdu_t *pdu, unsigned short type,
+		                            size_t length);
+#endif
 /**
  * Encodes option with given @p delta into @p opt. This function returns
  * the number of bytes written to @p opt or @c 0 on error. This happens
@@ -265,9 +269,13 @@ size_t coap_opt_setheader(coap_opt_t *opt, size_t maxlen,
  * @return The number of bytes that have been written to @p opt or
  *         @c 0 on error. The return value will always be less than @p n.
  */
+
 size_t coap_opt_encode(coap_opt_t *opt, size_t n, unsigned short delta,
 		       const unsigned char *val, size_t length);
-
+#if defined(WITH_STNODE)
+size_t coap_opt_encode_to_mbuf(coap_pdu_t *pdu, unsigned short type,
+		       const unsigned char *val, size_t length);
+#endif
 /**
  * Decodes the delta value of the next option. This function returns
  * the number of bytes read or @c 0 on error. The caller of this

@@ -405,3 +405,92 @@ coap_opt_encode(coap_opt_t *opt, size_t maxlen, unsigned short delta,
   return l + length;
 }
 
+
+#if defined(WITH_STNODE)
+
+
+size_t
+coap_opt_setheader_to_mbuf(coap_pdu_t *pdu, unsigned short type, size_t length) {
+  size_t skip = 0;
+  unsigned short delta = type - pdu->max_delta;
+  unsigned short maxlen = pdu->max_size - pdu->length;
+  unsigned char opt[5];
+
+  if (maxlen == 0)
+    return 0;
+
+  if (delta < 13) {
+    opt[0] = delta << 4;
+  } else if (delta < 270) {
+    if (maxlen < 2) {
+      debug("insufficient space to encode option delta %d", delta);
+      return 0;
+    }
+
+    opt[0] = 0xd0;
+    opt[++skip] = delta - 13;
+  } else {
+    if (maxlen < 3) {
+      debug("insufficient space to encode option delta %d", delta);
+      return 0;
+    }
+
+    opt[0] = 0xe0;
+    opt[++skip] = ((delta - 269) >> 8) & 0xff;
+    opt[++skip] = (delta - 269) & 0xff;
+  }
+
+  if (length < 13) {
+    opt[0] |= length & 0x0f;
+  } else if (length < 270) {
+    if (maxlen < skip + 1) {
+      debug("insufficient space to encode option length %d", length);
+      return 0;
+    }
+
+    opt[0] |= 0x0d;
+    opt[++skip] = length - 13;
+  } else {
+    if (maxlen < skip + 2) {
+      debug("insufficient space to encode option delta %d", delta);
+      return 0;
+    }
+
+    opt[0] |= 0x0e;
+    opt[++skip] = ((length - 269) >> 8) & 0xff;
+    opt[++skip] = (length - 269) & 0xff;
+  }
+
+  mbuf_write(pdu->mbuf, &opt, skip+1, pdu->length);
+  return skip + 1;
+}
+
+
+
+size_t
+coap_opt_encode_to_mbuf(coap_pdu_t *pdu, unsigned short type,
+		const unsigned char *val, size_t length) {
+  size_t l = 1;
+  unsigned short maxlen = pdu->max_size - pdu->length;
+
+  l = coap_opt_setheader_to_mbuf(pdu, type, length);
+  assert(l <= maxlen);
+
+  if (!l) {
+    debug("coap_opt_encode: cannot set option header\n");
+    return 0;
+  }
+
+  maxlen -= l;
+
+  if (maxlen < length) {
+    debug("coap_opt_encode: option too large for buffer\n");
+    return 0;
+  }
+
+  if (val)
+	  mbuf_write(pdu->mbuf, val, length, pdu->length+l);
+
+  return l + length;
+}
+#endif
