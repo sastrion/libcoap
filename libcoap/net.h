@@ -127,6 +127,8 @@ typedef struct coap_context_t {
 #endif /* WITH_LWIP */
 #ifdef WITH_STNODE
   net_socket_t *ns;
+  struct mbuf *pending_package;
+  struct coap_address_t * destination_address;
 #endif
 
   /**

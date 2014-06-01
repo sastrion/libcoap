@@ -894,13 +894,9 @@ coap_read( coap_context_t *ctx ) {
 #if defined(WITH_LWIP) || defined(WITH_CONTIKI)
   char *buf;
 #endif
-#ifdef WITH_STNODE
-/*
- * TODO: MWAS: This is a temporary solution - to be investigated
- */
-  char *buf;
-#endif
+#ifndef WITH_STNODE
   coap_hdr_t *pdu;
+#endif
   ssize_t bytes_read = -1;
   coap_address_t src, dst;
   coap_queue_t *node;
@@ -914,7 +910,9 @@ coap_read( coap_context_t *ctx ) {
   buf = ctx->pending_package->payload;
 #endif /* WITH_LWIP */
 
+#ifndef WITH_STNODE
   pdu = (coap_hdr_t *)buf;
+#endif /* WITH_STNODE */
 
   coap_address_init(&src);
 
@@ -942,6 +940,15 @@ coap_read( coap_context_t *ctx ) {
   src.port = ctx->pending_port;
   bytes_read = ctx->pending_package->tot_len;
 #endif /* WITH_LWIP */
+#ifdef WITH_STNODE
+  //TODO: MWAS 1: what is the correct value of timeout for net_receive
+  //TODO: MWAS 2: src and dst - no way to properly set them with current network stack
+  ctx->pending_package = net_receive(ctx->ns, 1000);
+  memcpy(&src.addr, &ctx->destination_address->addr, sizeof(ipaddr_t));
+  src.port = ctx->destination_address->port;
+  src.size = 4;
+  bytes_read = ctx->pending_package->tot_len;
+#endif /* WITH_STNODE */
 
   if ( bytes_read < 0 ) {
     warn("coap_read: recvfrom");
@@ -953,10 +960,12 @@ coap_read( coap_context_t *ctx ) {
     goto error_early;
   }
 
+#ifndef WITH_STNODE
   if ( pdu->version != COAP_DEFAULT_VERSION ) {
     debug("coap_read: unknown protocol version\n" );
     goto error_early;
   }
+#endif /* WITH_STNODE */
 
   node = coap_new_node();
   if ( !node )
@@ -964,6 +973,9 @@ coap_read( coap_context_t *ctx ) {
 
 #ifdef WITH_LWIP
   node->pdu = coap_pdu_from_pbuf(ctx->pending_package);
+  ctx->pending_package = NULL;
+#elif WITH_STNODE
+  node->pdu = coap_pdu_from_mbuf(ctx->pending_package);
   ctx->pending_package = NULL;
 #else
   node->pdu = coap_pdu_init(0, 0, 0, bytes_read);
@@ -975,7 +987,11 @@ coap_read( coap_context_t *ctx ) {
   memcpy(&node->local, &dst, sizeof(coap_address_t));
   memcpy(&node->remote, &src, sizeof(coap_address_t));
 
+#ifndef WITH_STNODE
 if (!coap_pdu_parse((unsigned char *)buf, bytes_read, node->pdu)) {
+#else
+  if (!coap_pdu_parse((unsigned char *)node->pdu->mbuf->payload, bytes_read, node->pdu)) {
+#endif
     warn("discard malformed PDU");
     goto error;
   }
