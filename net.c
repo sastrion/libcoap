@@ -707,6 +707,29 @@ coap_send_impl(coap_context_t *context,
   return id;
 }
 #endif /* WITH_LWIP */
+#ifdef WITH_STNODE
+/*
+ * MWAS: st-node implementation doesn't require destination address for sending,
+ * destination address is currently used only for transaction id.
+ */
+coap_tid_t
+coap_send_impl(coap_context_t *context,
+	       const coap_address_t *dst,
+	       coap_pdu_t *pdu) {
+  coap_tid_t id = COAP_INVALID_TID;
+
+  if ( !context || !dst || !pdu )
+    return id;
+
+  coap_transaction_id(dst, pdu, &id);
+
+  if(!net_send(context->ns, pdu->mbuf)) {
+	  coap_log(LOG_CRIT, "coap_send: sendto\n");
+  }
+
+  return id;
+}
+#endif /* WITH_STNODE */
 
 coap_tid_t 
 coap_send(coap_context_t *context, 
