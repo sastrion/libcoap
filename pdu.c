@@ -203,7 +203,9 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
 size_t
 coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const unsigned char *data) {
   size_t optsize;
+#ifndef WITH_STNODE
   coap_opt_t *opt;
+#endif
   
   assert(pdu);
   pdu->data = NULL;
@@ -213,11 +215,17 @@ coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const un
     return 0;
   }
 
+#ifndef WITH_STNODE
   opt = (unsigned char *)pdu->hdr + pdu->length;
+#endif
 
   /* encode option and check length */
+#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_POSIX)
   optsize = coap_opt_encode(opt, pdu->max_size - pdu->length, 
 			    type - pdu->max_delta, data, len);
+#elif defined(WITH_STNODE)
+  optsize = coap_opt_encode_to_mbuf(pdu, type, data, len);
+#endif
 
   if (!optsize) {
     warn("coap_add_option: cannot add option\n");
@@ -235,7 +243,9 @@ coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const un
 unsigned char*
 coap_add_option_later(coap_pdu_t *pdu, unsigned short type, unsigned int len) {
   size_t optsize;
+#ifndef WITH_STNODE
   coap_opt_t *opt;
+#endif
 
   assert(pdu);
   pdu->data = NULL;
@@ -245,11 +255,17 @@ coap_add_option_later(coap_pdu_t *pdu, unsigned short type, unsigned int len) {
     return NULL;
   }
 
+#ifndef WITH_STNODE
   opt = (unsigned char *)pdu->hdr + pdu->length;
+#endif
 
   /* encode option and check length */
+#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_POSIX)
   optsize = coap_opt_encode(opt, pdu->max_size - pdu->length,
 			    type - pdu->max_delta, NULL, len);
+#elif defined(WITH_STNODE)
+  optsize = coap_opt_encode_to_mbuf(pdu, type, NULL, len);
+#endif
 
   if (!optsize) {
     warn("coap_add_option: cannot add option\n");
