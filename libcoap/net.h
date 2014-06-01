@@ -189,7 +189,7 @@ coap_queue_t *coap_pop_next( coap_context_t *context );
 #ifndef WITH_STNODE
 coap_context_t *coap_new_context(const coap_address_t *listen_addr);
 #else /* WITH_STNODE */
-coap_context_t *coap_new_context(const coap_address_t *dest_addr);
+coap_context_t *coap_new_context(coap_address_t *dest_addr);
 #endif /* WITH_STNODE */
 
 /** 

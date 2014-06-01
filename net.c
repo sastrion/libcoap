@@ -320,8 +320,7 @@ coap_new_context(
 	 * destination address is required
 	 */
 coap_context_t *
-coap_new_context(
-  const coap_address_t *dest_addr) {
+coap_new_context(coap_address_t *dest_addr) {
 #endif /* WITH_STNODE */
 #ifdef WITH_POSIX
   coap_context_t *c = coap_malloc( sizeof( coap_context_t ) );
@@ -461,10 +460,12 @@ coap_new_context(
    * That requires either declaring extern address or passing address
    * as an argument. TBD
    */
-	c->ns = net_connect(dest_addr, COAP_DEFAULT_PORT, NET_UDP);
+    c->destination_address = dest_addr;
+	c->ns = net_connect(&dest_addr->addr, dest_addr->port, NET_UDP);
 	if (!c->ns) {
 		return NULL;
 	}
+    return c;
 #endif
 }
 
