@@ -327,6 +327,9 @@ coap_resource_init(const unsigned char *uri, size_t len, int flags) {
 #ifdef WITH_CONTIKI
   r = (coap_resource_t *)memb_alloc(&resource_storage);
 #endif
+#ifdef WITH_STNODE
+  r = (coap_resource_t *)sys_malloc(sizeof(coap_resource_t));
+#endif
   if (r) {
     memset(r, 0, sizeof(coap_resource_t));
 
@@ -366,6 +369,9 @@ coap_add_attr(coap_resource_t *resource,
 #endif
 #ifdef WITH_CONTIKI
   attr = (coap_attr_t *)memb_alloc(&attribute_storage);
+#endif
+#ifdef WITH_STNODE
+  attr = (coap_attr_t *)sys_malloc(sizeof(coap_attr_t));
 #endif
 
   if (attr) {
