@@ -280,8 +280,11 @@ coap_add_data(coap_pdu_t *pdu, unsigned int len, const unsigned char *data) {
   pdu->data = (unsigned char *)pdu->hdr + pdu->length;
   *pdu->data = COAP_PAYLOAD_START;
   pdu->data++;
-
+#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_POSIX)
   memcpy(pdu->data, data, len);
+#elif defined(WITH_STNODE)
+  mbuf_write(pdu->mbuf, data, len, pdu->length+1);
+#endif
   pdu->length += len + 1;
   return 1;
 }
