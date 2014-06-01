@@ -43,10 +43,15 @@ void
 coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
   assert(pdu);
 
+#ifdef WITH_STNODE
+  memset(pdu, 0, sizeof(coap_pdu_t)); /* MWAS: for st-node payload is in separate memory area */
+  pdu->max_size = size;
+#else
   memset(pdu, 0, sizeof(coap_pdu_t) + size);
   pdu->max_size = size;
   pdu->hdr = (coap_hdr_t *)((unsigned char *)pdu + sizeof(coap_pdu_t));
   pdu->hdr->version = COAP_DEFAULT_VERSION;
+#endif
 
   /* data is NULL unless explicitly set by coap_add_data() */
   pdu->length = sizeof(coap_hdr_t);
@@ -85,6 +90,9 @@ coap_pdu_init(unsigned char type, unsigned char code,
 #ifdef WITH_LWIP
     struct pbuf *p;
 #endif
+#ifdef WITH_STNODE
+    struct mbuf *m;
+#endif
 
   assert(size <= COAP_MAX_PDU_SIZE);
   /* Size must be large enough to fit the header. */
@@ -110,8 +118,19 @@ coap_pdu_init(unsigned char type, unsigned char code,
     pdu = NULL;
   }
 #endif
+#ifdef WITH_STNODE
+  //TODO: MWAS: get rid of sys_malloc
+  pdu = sys_malloc(sizeof(coap_pdu_t));
+  m = mbuf_new();
+#endif
   if (pdu) {
     coap_pdu_clear(pdu, size);
+#ifdef WITH_STNODE
+    pdu->hdr = (coap_hdr_t *)((unsigned char *)m->payload);
+    pdu->hdr->version = COAP_DEFAULT_VERSION;
+    pdu->hdr->token_length = 0;
+    pdu->mbuf = m;
+#endif
     pdu->hdr->id = id;
     pdu->hdr->type = type;
     pdu->hdr->code = code;
@@ -151,10 +170,15 @@ coap_delete_pdu(coap_pdu_t *pdu) {
 #ifdef WITH_CONTIKI
   memb_free(&pdu_storage, pdu);
 #endif
+#ifdef WITH_STNODE
+  if (pdu != NULL)
+    mbuf_free(pdu->mbuf);
+#endif
 }
 
 int
 coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
+
   const size_t HEADERLENGTH = len + 4;
   /* must allow for pdu == NULL as callers may rely on this */
   if (!pdu || len > 8 || pdu->max_size < HEADERLENGTH)
