@@ -265,9 +265,7 @@ coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const un
 unsigned char*
 coap_add_option_later(coap_pdu_t *pdu, unsigned short type, unsigned int len) {
   size_t optsize;
-#ifndef WITH_STNODE
   coap_opt_t *opt;
-#endif
 
   assert(pdu);
   pdu->data = NULL;
@@ -277,9 +275,7 @@ coap_add_option_later(coap_pdu_t *pdu, unsigned short type, unsigned int len) {
     return NULL;
   }
 
-#ifndef WITH_STNODE
   opt = (unsigned char *)pdu->hdr + pdu->length;
-#endif
 
   /* encode option and check length */
 #if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_POSIX)
