@@ -186,7 +186,12 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
 
   pdu->hdr->token_length = len;
   if (len)
+#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_POSIX)
     memcpy(pdu->hdr->token, data, len);
+#elif defined(WITH_STNODE)
+    mbuf_write(pdu->mbuf, data, len, pdu->length);
+#endif
+
   pdu->max_delta = 0;
   pdu->length = HEADERLENGTH;
   pdu->data = NULL;
