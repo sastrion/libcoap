@@ -836,7 +836,7 @@ coap_remove_failed_observers(coap_context_t *context,
 	obs->fail_cnt = 0;
 	
 #ifndef NDEBUG
-	if (LOG_DEBUG <= coap_get_log_level()) {
+	if (CP_LOG_DEBUG <= coap_get_log_level()) {
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 40
 #endif

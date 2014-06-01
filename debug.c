@@ -345,7 +345,7 @@ coap_log_impl(coap_log_t level, const char *format, ...) {
   if (print_timestamp(timebuf,sizeof(timebuf), now))
     fprintf(log_fd, "%s ", timebuf);
 
-  if (level <= LOG_DEBUG)
+  if (level <= CP_LOG_DEBUG)
     fprintf(log_fd, "%s ", loglevels[level]);
 
   va_start(ap, format);
@@ -367,7 +367,7 @@ coap_log_impl(coap_log_t level, const char *format, ...) {
   if (print_timestamp(timebuf,sizeof(timebuf), now))
     PRINTF("%s ", timebuf);
 
-  if (level <= LOG_DEBUG)
+  if (level <= CP_LOG_DEBUG)
     PRINTF("%s ", loglevels[level]);
 
   va_start(ap, format);

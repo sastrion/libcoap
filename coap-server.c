@@ -81,7 +81,7 @@ init_coap() {
 
   coap_context = coap_new_context(&listen_addr);
 
-  coap_set_log_level(LOG_DEBUG);
+  coap_set_log_level(CP_LOG_DEBUG);
 
   if (!coap_context)
     coap_log(LOG_CRIT, "cannot create CoAP context\r\n");

@@ -24,8 +24,8 @@
 typedef short coap_log_t;
 #else
 /** Pre-defined log levels akin to what is used in \b syslog. */
-typedef enum { LOG_EMERG=0, LOG_ALERT, LOG_CRIT, LOG_WARNING, 
-       LOG_NOTICE, LOG_INFO, LOG_DEBUG
+typedef enum {LOG_EMERG=0, LOG_ALERT, LOG_CRIT, LOG_WARNING,
+       LOG_NOTICE, CP_LOG_INFO, CP_LOG_DEBUG
 } coap_log_t;
 #endif
 
@@ -56,9 +56,9 @@ void coap_log_impl(coap_log_t level, const char *format, ...);
 #ifndef NDEBUG
 
 /* A set of convenience macros for common log levels. */
-#define info(...) coap_log(LOG_INFO, __VA_ARGS__)
+#define info(...) coap_log(CP_LOG_INFO, __VA_ARGS__)
 #define warn(...) coap_log(LOG_WARNING, __VA_ARGS__)
-#define debug(...) coap_log(LOG_DEBUG, __VA_ARGS__)
+#define debug(...) coap_log(CP_LOG_DEBUG, __VA_ARGS__)
 
 #include "pdu.h"
 void coap_show_pdu(const coap_pdu_t *);
