@@ -83,6 +83,28 @@ coap_pdu_from_pbuf(struct pbuf *pbuf)
 }
 #endif
 
+#ifdef WITH_STNODE
+#include "net.h"
+#include "system.h"
+
+coap_pdu_t *
+coap_pdu_from_mbuf(struct mbuf *mbuf)
+{
+  coap_pdu_t *result;
+  //TODO: MWAS: get rid of sys_malloc
+  result = sys_malloc(sizeof(coap_pdu_t));
+
+  memset(result, 0, sizeof(coap_pdu_t));
+
+  result->max_size = mbuf->tot_len;
+  result->length = mbuf->tot_len;
+  result->hdr = (coap_hdr_t *)((unsigned char *)mbuf->payload);
+  result->mbuf = mbuf;
+
+  return result;
+}
+#endif
+
 coap_pdu_t *
 coap_pdu_init(unsigned char type, unsigned char code, 
 	      unsigned short id, size_t size) {

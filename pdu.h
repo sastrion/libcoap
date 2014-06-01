@@ -247,7 +247,9 @@ typedef struct {
  */
 coap_pdu_t * coap_pdu_from_pbuf(struct pbuf *pbuf);
 #endif
-
+#ifdef WITH_STNODE
+coap_pdu_t * coap_pdu_from_mbuf(struct mbuf *mbuf);
+#endif
 /** 
  * Creates a new CoAP PDU of given @p size (must be large enough to hold the 
  * basic CoAP message header (coap_hdr_t). The function returns a pointer to
