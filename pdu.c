@@ -201,7 +201,10 @@ coap_delete_pdu(coap_pdu_t *pdu) {
 #endif
 #ifdef WITH_STNODE
   if (pdu != NULL)
+  {
     mbuf_free(pdu->mbuf);
+    sys_free(pdu);
+  }
 #endif
 }
 
