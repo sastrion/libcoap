@@ -54,11 +54,12 @@ void
 coap_set_log_level(coap_log_t level) {
   maxlog = level;
 }
-
+#ifndef WITH_STNODE
 /* this array has the same order as the type log_t */
 static char *loglevels[] = {
   "EMRG", "ALRT", "CRIT", "ERR", "WARN", "NOTE", "INFO", "DEBG" 
 };
+#endif
 
 #ifdef HAVE_TIME_H
 
@@ -328,7 +329,7 @@ coap_show_pdu(const coap_pdu_t *pdu) {
 
 #endif /* NDEBUG */
 
-#ifndef WITH_CONTIKI
+#if defined(WITH_POSIX) | defined(WITH_LWIP)
 void 
 coap_log_impl(coap_log_t level, const char *format, ...) {
   char timebuf[32];
@@ -345,7 +346,7 @@ coap_log_impl(coap_log_t level, const char *format, ...) {
   if (print_timestamp(timebuf,sizeof(timebuf), now))
     fprintf(log_fd, "%s ", timebuf);
 
-  if (level <= CP_LOG_DEBUG)
+  if (level <= LOG_DEBUG)
     fprintf(log_fd, "%s ", loglevels[level]);
 
   va_start(ap, format);
@@ -353,7 +354,7 @@ coap_log_impl(coap_log_t level, const char *format, ...) {
   va_end(ap);
   fflush(log_fd);
 }
-#else /* WITH_CONTIKI */
+#elif defined(WITH_CONTIKI)
 void 
 coap_log_impl(coap_log_t level, const char *format, ...) {
   char timebuf[32];
@@ -367,11 +368,17 @@ coap_log_impl(coap_log_t level, const char *format, ...) {
   if (print_timestamp(timebuf,sizeof(timebuf), now))
     PRINTF("%s ", timebuf);
 
-  if (level <= CP_LOG_DEBUG)
+  if (level <= LOG_DEBUG)
     PRINTF("%s ", loglevels[level]);
 
   va_start(ap, format);
   PRINTF(format, ap);
   va_end(ap);
 }
-#endif /* WITH_CONTIKI */
+#elif defined(WITH_STNODE)
+void
+coap_log_impl(coap_log_t level, const char *format, ...) {
+
+	_log_printf((ROM_PTR)level, (log_t *)format, __LINE__, ROM_PSTR(format));
+}
+#endif

@@ -8,6 +8,11 @@
 
 #include "config.h"
 
+#ifdef WITH_STNODE
+#include "logging.h"
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
+#endif
+
 #if defined(HAVE_ASSERT_H) && !defined(assert)
 # include <assert.h>
 #endif

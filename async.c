@@ -21,6 +21,11 @@
 #include "debug.h"
 #include "async.h"
 
+#ifdef WITH_STNODE
+#include "logging.h"
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
+#endif
+
 coap_async_state_t *
 coap_register_async(coap_context_t *context, coap_address_t *peer,
 		    coap_pdu_t *request, unsigned char flags, void *data) {

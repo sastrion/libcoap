@@ -15,6 +15,11 @@
 #include "debug.h"
 #include "block.h"
 
+#ifdef WITH_STNODE
+#include "logging.h"
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
+#endif
+
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
 #ifndef WITHOUT_BLOCK

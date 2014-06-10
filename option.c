@@ -20,6 +20,11 @@
 #include "option.h"
 #include "debug.h"
 
+#ifdef WITH_STNODE
+#include "logging.h"
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
+#endif
+
 coap_opt_t *
 options_start(coap_pdu_t *pdu) {
 

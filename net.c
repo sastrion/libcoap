@@ -48,6 +48,8 @@
 #ifdef WITH_STNODE
 #include "system.h"
 #include "net.h"
+#include "logging.h"
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 
 systime_t clock_offset;
 
@@ -1024,7 +1026,9 @@ if (!coap_pdu_parse((unsigned char *)buf, bytes_read, node->pdu)) {
   coap_insert_node(&ctx->recvqueue, node);
 
 #ifndef NDEBUG
-  if (CP_LOG_DEBUG <= coap_get_log_level()) {
+#ifndef WITH_STNODE
+	if (LOG_DEBUG <= coap_get_log_level()) {
+#endif
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 40
 #endif
@@ -1034,7 +1038,9 @@ if (!coap_pdu_parse((unsigned char *)buf, bytes_read, node->pdu)) {
       debug("** received %d bytes from %s:\n", (int)bytes_read, addr);
 
     coap_show_pdu( node->pdu );
-  }
+#ifndef WITH_STNODE
+	}
+#endif
 #endif
 
   return 0;
@@ -1518,7 +1524,7 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
 	  if ((observe_action & COAP_OBSERVE_CANCEL) == 0) {
 	    coap_subscription_t *subscription;
 
-	    coap_log(CP_LOG_DEBUG, "create new subscription\n");
+	    coap_log(LOG_DEBUG, "create new subscription\n");
 	    subscription = coap_add_observer(resource, &node->remote, &token);
 	    if (subscription) {
 	      subscription->non = node->pdu->hdr->type == COAP_MESSAGE_NON;
@@ -1533,7 +1539,7 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
 
       if (observe && ((COAP_RESPONSE_CLASS(response->hdr->code) > 2)
 		      || ((observe_action & COAP_OBSERVE_CANCEL) != 0))) {
-	coap_log(CP_LOG_DEBUG, "removed observer");
+	coap_log(LOG_DEBUG, "removed observer");
 	coap_delete_observer(resource,  &node->remote, &token);
       }
 

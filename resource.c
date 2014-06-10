@@ -16,6 +16,8 @@
 #include "utlist.h"
 #include "mem.h"
 #include "system.h"
+#include "logging.h"
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 
 #define COAP_MALLOC_TYPE(Type) \
   ((coap_##Type##_t *)sys_malloc(sizeof(coap_##Type##_t)))
@@ -842,7 +844,9 @@ coap_remove_failed_observers(coap_context_t *context,
 	obs->fail_cnt = 0;
 	
 #ifndef NDEBUG
-	if (CP_LOG_DEBUG <= coap_get_log_level()) {
+#ifndef WITH_STNODE
+	if (LOG_DEBUG <= coap_get_log_level()) {
+#endif
 #ifndef INET6_ADDRSTRLEN
 #define INET6_ADDRSTRLEN 40
 #endif
@@ -850,7 +854,9 @@ coap_remove_failed_observers(coap_context_t *context,
 
 	  if (coap_print_addr(&obs->subscriber, addr, INET6_ADDRSTRLEN+8))
 	    debug("** removed observer %s\n", addr);
+#ifndef WITH_STNODE
 	}
+#endif
 #endif
 	coap_cancel_all_messages(context, &obs->subscriber, 
 				 obs->token, obs->token_length);

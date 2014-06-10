@@ -22,6 +22,11 @@
 #include "option.h"
 #include "uri.h"
 
+#ifdef WITH_STNODE
+#include "logging.h"
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
+#endif
+
 /** 
  * A length-safe version of strchr(). This function returns a pointer
  * to the first occurrence of @p c  in @p s, or @c NULL if not found.

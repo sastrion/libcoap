@@ -24,11 +24,21 @@
 typedef short coap_log_t;
 #else
 /** Pre-defined log levels akin to what is used in \b syslog. */
+#ifndef WITH_STNODE
 typedef enum {LOG_EMERG=0, LOG_ALERT, LOG_CRIT, LOG_WARNING,
-       LOG_NOTICE, CP_LOG_INFO, CP_LOG_DEBUG
+       LOG_NOTICE, LOG_INFO, LOG_DEBUG
 } coap_log_t;
+#else
+#include "logging.h"
+typedef log_level_t coap_log_t;
+#define LOG_WARNING LOG_WARN
+#define LOG_CRIT LOG_ERROR
+#define LOG_ALERT LOG_FATAL
+#define LOG_EMERG LOG_FATAL
+#endif
 #endif
 
+#ifndef WITH_STNODE
 /** Returns the current log level. */
 coap_log_t coap_get_log_level();
 
@@ -40,6 +50,7 @@ const char *coap_package_name();
 
 /** Returns a zero-terminated string with the library version. */
 const char *coap_package_version();
+#endif
 
 /** 
  * Writes the given text to @c COAP_ERR_FD (for @p level <= @c
@@ -55,10 +66,12 @@ void coap_log_impl(coap_log_t level, const char *format, ...);
 
 #ifndef NDEBUG
 
+#ifndef WITH_STNODE
 /* A set of convenience macros for common log levels. */
-#define info(...) coap_log(CP_LOG_INFO, __VA_ARGS__)
+#define info(...) coap_log(LOG_INFO, __VA_ARGS__)
 #define warn(...) coap_log(LOG_WARNING, __VA_ARGS__)
-#define debug(...) coap_log(CP_LOG_DEBUG, __VA_ARGS__)
+#define debug(...) coap_log(LOG_DEBUG, __VA_ARGS__)
+#endif
 
 #include "pdu.h"
 void coap_show_pdu(const coap_pdu_t *);
