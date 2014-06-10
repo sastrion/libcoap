@@ -157,6 +157,8 @@ coap_pdu_init(unsigned char type, unsigned char code,
     pdu->hdr->version = COAP_DEFAULT_VERSION;
     pdu->hdr->token_length = 0;
     pdu->mbuf = m;
+    pdu->mbuf->len = sizeof(coap_hdr_t);
+    pdu->mbuf->tot_len = sizeof(coap_hdr_t);
 #endif
     pdu->hdr->id = id;
     pdu->hdr->type = type;
