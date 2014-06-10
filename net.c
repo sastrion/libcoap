@@ -910,9 +910,12 @@ check_opt_size(coap_opt_t *opt, unsigned char *maxpos) {
   }
   return 0;
 }
-
+#ifndef WITH_STNODE
+coap_read( coap_context_t *ctx) {
+#else
 int
-coap_read( coap_context_t *ctx ) {
+coap_read( coap_context_t *ctx, coap_tick_t timeout) {
+#endif
 #ifdef WITH_POSIX
   static char buf[COAP_MAX_PDU_SIZE];
 #endif
@@ -966,13 +969,15 @@ coap_read( coap_context_t *ctx ) {
   bytes_read = ctx->pending_package->tot_len;
 #endif /* WITH_LWIP */
 #ifdef WITH_STNODE
-  //TODO: MWAS 1: what is the correct value of timeout for net_receive
-  //TODO: MWAS 2: src and dst - no way to properly set them with current network stack
-  ctx->pending_package = net_receive(ctx->ns, 1000);
-  memcpy(&src.addr, &ctx->destination_address->addr, sizeof(ipaddr_t));
-  src.port = ctx->destination_address->port;
-  src.size = 4;
-  bytes_read = ctx->pending_package->tot_len;
+  //TODO: MWAS: src and dst - no way to properly set them with current network stack
+  ctx->pending_package = net_receive(ctx->ns, timeout);
+  if(ctx->pending_package)
+  {
+	memcpy(&src.addr, &ctx->destination_address->addr, sizeof(ipaddr_t));
+	src.port = ctx->destination_address->port;
+	src.size = 4;
+	bytes_read = ctx->pending_package->tot_len;
+  }
 #endif /* WITH_STNODE */
 
   if ( bytes_read < 0 ) {

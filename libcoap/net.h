@@ -345,8 +345,11 @@ coap_tid_t coap_retransmit( coap_context_t *context, coap_queue_t *node );
  * and a new node with the parsed PDU is added to the receive queue in the specified context
  * object.
  */
+#ifndef WITH_STNODE
 int coap_read( coap_context_t *context );
-
+#else
+int coap_read( coap_context_t *context, coap_tick_t timeout );
+#endif
 /** 
  * Calculates a unique transaction id from given arguments @p peer and
  * @p pdu. The id is returned in @p id.
