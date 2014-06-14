@@ -310,20 +310,11 @@ is_wkc(coap_key_t k) {
 }
 #endif
 
-#ifndef WITH_STNODE
+
 coap_context_t *
 coap_new_context(
   const coap_address_t *listen_addr) {
-#else /* WITH_STNODE */
-	/*
-	 * MWAS: st-node network interface doesn't support
-	 * specifying address for listening socket.
-	 * Also st-node supoorts only connected sockets -
-	 * destination address is required
-	 */
-coap_context_t *
-coap_new_context(coap_address_t *dest_addr) {
-#endif /* WITH_STNODE */
+
 #ifdef WITH_POSIX
   coap_context_t *c = coap_malloc( sizeof( coap_context_t ) );
   int reuse = 1;
@@ -341,22 +332,13 @@ coap_new_context(coap_address_t *dest_addr) {
   coap_context_t *c = sys_malloc( sizeof( coap_context_t ) );
 #endif /* WITH_STNODE */
 
-#ifndef WITH_STNODE
   if (!listen_addr) {
     coap_log(LOG_EMERG, "no listen address specified\n");
     return NULL;
   }
-#else /* WITH_STNODE */
-  if (!dest_addr) {
-    coap_log(LOG_EMERG, "no destination address specified\n");
-    return NULL;
-  }
-#endif /* WITH_STNODE */
   coap_clock_init();
 #ifdef WITH_LWIP
   prng_init(LWIP_RAND());
-#elif WITH_STNODE
-  prng_init((unsigned long)dest_addr ^ clock_offset);
 #else
   prng_init((unsigned long)listen_addr ^ clock_offset);
 #endif
@@ -454,16 +436,7 @@ coap_new_context(coap_address_t *dest_addr) {
   return c;
 #endif
 #ifdef WITH_STNODE
-  /* TODO: MWAS: here two things should happen:
-   * 1. network socket should be created
-   * 2. binding of local address to socket should happen
-   * st-node allows only for connected UDP sockets.
-   * To create a socket, destination address is necessary.
-   * That requires either declaring extern address or passing address
-   * as an argument. TBD
-   */
-    c->destination_address = dest_addr;
-	c->ns = net_connect(&dest_addr->addr, dest_addr->port, NET_UDP);
+	c->ns = net_create(NET_UDP);
 	if (!c->ns) {
 		return NULL;
 	}
@@ -725,7 +698,7 @@ coap_send_impl(coap_context_t *context,
 
   coap_transaction_id(dst, pdu, &id);
 
-  if(!net_send(context->ns, pdu->mbuf)) {
+  if(!net_send_to(context->ns, &dst->addr, dst->port, pdu->mbuf)) {
 	  coap_log(LOG_CRIT, "coap_send: sendto\n");
   }
 
@@ -969,12 +942,9 @@ coap_read( coap_context_t *ctx, coap_tick_t timeout) {
   bytes_read = ctx->pending_package->tot_len;
 #endif /* WITH_LWIP */
 #ifdef WITH_STNODE
-  //TODO: MWAS: src and dst - no way to properly set them with current network stack
-  ctx->pending_package = net_receive(ctx->ns, timeout);
+  ctx->pending_package = net_receive_from(ctx->ns, &src.addr, &src.port, timeout);
   if(ctx->pending_package)
   {
-	memcpy(&src.addr, &ctx->destination_address->addr, sizeof(ipaddr_t));
-	src.port = ctx->destination_address->port;
 	src.size = 4;
 	bytes_read = ctx->pending_package->tot_len;
   }

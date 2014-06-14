@@ -128,7 +128,6 @@ typedef struct coap_context_t {
 #ifdef WITH_STNODE
   net_socket_t *ns;
   struct mbuf *pending_package;
-  struct coap_address_t * destination_address;
 #endif
 
   /**
@@ -188,11 +187,7 @@ coap_queue_t *coap_peek_next( coap_context_t *context );
 coap_queue_t *coap_pop_next( coap_context_t *context );
 
 /** Creates a new coap_context_t object that will hold the CoAP stack status.  */
-#ifndef WITH_STNODE
 coap_context_t *coap_new_context(const coap_address_t *listen_addr);
-#else /* WITH_STNODE */
-coap_context_t *coap_new_context(coap_address_t *dest_addr);
-#endif /* WITH_STNODE */
 
 /** 
  * Returns a new message id and updates @p context->message_id
