@@ -440,6 +440,11 @@ coap_new_context(
 	if (!c->ns) {
 		return NULL;
 	}
+	if(!net_bind(c->ns, listen_addr->port))
+	{
+		debug("can't bind socket to port %d\n", listen_addr->port);
+		return NULL;
+	}
     return c;
 #endif
 }
