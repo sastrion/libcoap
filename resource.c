@@ -175,16 +175,25 @@ print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen,
 		size_t offset,
 		coap_opt_t *query_filter __attribute__ ((unused))) {
 #else /* not a GCC */
+#ifndef WITH_STNODE
 coap_print_status_t
 print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen,
 		size_t offset, coap_opt_t *query_filter) {
+#else
+coap_print_status_t
+print_wellknown(coap_context_t *context, coap_pdu_t *pdu, size_t *buflen,
+			size_t offset, coap_opt_t *query_filter) {
+#endif /* WITH_STNODE */
 #endif /* GCC */
   coap_resource_t *r;
+#ifndef WITH_STNODE
   unsigned char *p = buf;
   const unsigned char *bufend = buf + *buflen;
-  size_t left, written = 0;
-  coap_print_status_t result;
+  size_t left = 0;
   const size_t old_offset = offset;
+#endif
+  size_t written = 0;
+  coap_print_status_t result;
   int subsequent_resource = 0;
 #ifndef COAP_RESOURCES_NOHASH
   coap_resource_t *tmp;
@@ -292,27 +301,42 @@ print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen,
     if (!subsequent_resource) {	/* this is the first resource  */
       subsequent_resource = 1;
     } else {
+#ifndef WITH_STNODE
       PRINT_COND_WITH_OFFSET(p, bufend, offset, ',', written);
+#else
+      if(pdu) {
+        mbuf_write(pdu->mbuf, ",", 1, pdu->length+1);
+        pdu->length += 1;
+      }
+      written++;
+#endif
     }
 
+#ifndef WITH_STNODE
     left = bufend - p; /* calculate available space */
     result = coap_print_link(r, p, &left, &offset);
-
+#else
+    result = coap_print_link(r, pdu, &written, &offset);
+#endif
     if (result & COAP_PRINT_STATUS_ERROR) {
       break;
     }
 
     /* coap_print_link() returns the number of characters that
      * where actually written to p. Now advance to its end. */
+#ifndef WITH_STNODE
     p += COAP_PRINT_OUTPUT_LENGTH(result);
     written += left;
+#endif
   }
 
   *buflen = written;
+#ifndef WITH_STNODE
   result = p - buf;
   if (result + old_offset - offset < *buflen) {
     result |= COAP_PRINT_STATUS_TRUNC;
   }
+#endif
   return result;
 }
 
@@ -556,6 +580,7 @@ coap_get_resource_from_key(coap_context_t *context, coap_key_t key) {
 #endif /* WITH_CONTIKI */
 }
 
+#ifndef WITH_STNODE
 coap_print_status_t
 coap_print_link(const coap_resource_t *resource, 
 		unsigned char *buf, size_t *len, size_t *offset) {
@@ -573,6 +598,27 @@ coap_print_link(const coap_resource_t *resource,
 			resource->uri.s, resource->uri.length, *len);
   
   PRINT_COND_WITH_OFFSET(p, bufend, *offset, '>', *len);
+#else /* WITH_STNODE */
+coap_print_status_t
+coap_print_link(const coap_resource_t *resource,
+		coap_pdu_t *pdu, size_t *len, size_t *offset) {
+    //unsigned char *p = buf;
+    //const unsigned char *bufend = buf + *len;
+  coap_attr_t *attr;
+  coap_print_status_t result = 0;
+
+  if(pdu)
+  {
+    mbuf_write(pdu->mbuf, "</", 2, pdu->length+1);
+    pdu->length += 2;
+    if(resource->uri.length) /* MWAS: this check is mandatory for "/" resource to work */
+      mbuf_write(pdu->mbuf, resource->uri.s, resource->uri.length, pdu->length+1);
+    pdu->length += resource->uri.length;
+    mbuf_write(pdu->mbuf, ">", 1, pdu->length+1);
+    pdu->length += 1;
+  }
+  *len += (3 + resource->uri.length);
+#endif
 
 #ifndef WITH_CONTIKI
   LL_FOREACH(resource->link_attr, attr) {
@@ -581,6 +627,7 @@ coap_print_link(const coap_resource_t *resource,
        attr = list_item_next(attr)) {
 #endif /* WITH_CONTIKI */
 
+#ifndef WITH_STNODE
     PRINT_COND_WITH_OFFSET(p, bufend, *offset, ';', *len);
 
     COPY_COND_WITH_OFFSET(p, bufend, *offset,
@@ -602,7 +649,37 @@ coap_print_link(const coap_resource_t *resource,
   if (result + old_offset - *offset < *len) {
     result |= COAP_PRINT_STATUS_TRUNC;
   }
+#else /* WITH_STNODE */
+  if(pdu)
+  {
+	  mbuf_write(pdu->mbuf, ";", 1, pdu->length+1);
+	  pdu->length += 1;
+	  mbuf_write(pdu->mbuf, attr->name.s, attr->name.length, pdu->length+1);
+	  pdu->length += attr->name.length;
+  }
+  *len += (1 + attr->name.length);
 
+  if (attr->value.s)
+  {
+    if(pdu)
+	{
+      mbuf_write(pdu->mbuf, "=", 1, pdu->length+1);
+      pdu->length += 1;
+      mbuf_write(pdu->mbuf, attr->value.s, attr->value.length, pdu->length+1);
+      pdu->length += attr->value.length;
+    }
+    *len += (1 + attr->value.length);
+  }
+}
+if (resource->observable) {
+	  if(pdu)
+	  {
+		  mbuf_write(pdu->mbuf, ";obs", 4, pdu->length+1);
+		  pdu->length += 4;
+	  }
+	  *len += 4;
+}
+#endif
   return result;
 }
 

@@ -212,8 +212,13 @@ typedef unsigned int coap_print_status_t;
  *         COAP_PRINT_STATUS_TRUNC indicates that the output has been
  *         truncated. 
  */
+#ifndef WITH_STNODE
 coap_print_status_t coap_print_link(const coap_resource_t *resource, 
 		    unsigned char *buf, size_t *len, size_t *offset);
+#else /* WITH_STNODE */
+coap_print_status_t coap_print_link(const coap_resource_t *resource,
+		    coap_pdu_t *pdu, size_t *len, size_t *offset);
+#endif
 
 /** 
  * Registers the specified @p handler as message handler for the request type

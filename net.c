@@ -152,7 +152,11 @@ static void received_package(void *arg, struct udp_pcb *upcb, struct pbuf *p, ip
 
 #endif /* WITH_LWIP */
 
+#ifdef WITH_STNODE
+int print_wellknown(coap_context_t *, coap_pdu_t *, size_t *, size_t, coap_opt_t *);
+#else
 int print_wellknown(coap_context_t *, unsigned char *, size_t *, size_t, coap_opt_t *);
+#endif
 
 void coap_handle_failed_notify(coap_context_t *, const coap_address_t *, 
 			       const str *);
@@ -1235,15 +1239,20 @@ coap_new_error_response(coap_pdu_t *request, unsigned char code,
  */
 static inline size_t
 get_wkc_len(coap_context_t *context, coap_opt_t *query_filter) {
+#ifndef WITH_STNODE
   unsigned char buf[1];
+#endif
   size_t len = 0;
 
+#ifndef WITH_STNODE
   if (print_wellknown(context, buf, &len, UINT_MAX, query_filter) /* MWAS: UINT_MAX requires limits.h */
       & COAP_PRINT_STATUS_ERROR) {
     warn("cannot determine length of /.well-known/core\n");
     return 0;
   }
-
+#else
+  print_wellknown(context, NULL, &len, UINT_MAX, query_filter);
+#endif
   debug("get_wkc_len: print_wellknown() returned %zu\n", len);
 
   return len;
@@ -1349,7 +1358,11 @@ wellknown_response(coap_context_t *context, coap_pdu_t *request) {
   resp->length++;
   len = need_block2 ? SZX_TO_BYTES(block.szx) : resp->max_size - resp->length;
 
+#ifndef WITH_STNODE
   result = print_wellknown(context, resp->data, &len, offset, query_filter);
+#else
+  result = print_wellknown(context, resp, &len, offset, query_filter);
+#endif
   if ((result & COAP_PRINT_STATUS_ERROR) != 0) {
     debug("print_wellknown failed\n");
     goto error;
