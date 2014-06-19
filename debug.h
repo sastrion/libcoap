@@ -35,6 +35,7 @@ typedef log_level_t coap_log_t;
 #define LOG_CRIT LOG_ERROR
 #define LOG_ALERT LOG_FATAL
 #define LOG_EMERG LOG_FATAL
+#define LOG_NOTICE LOG_INFO
 #endif
 #endif
 

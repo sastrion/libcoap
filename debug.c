@@ -35,6 +35,10 @@
 #include "net/uip-debug.h"
 #endif
 
+#ifdef WITH_STNODE
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
+#endif /* WITH_STNODE */
+
 static coap_log_t maxlog = LOG_WARNING;	/* default maximum log level */
 
 const char *coap_package_name() {
@@ -379,6 +383,28 @@ coap_log_impl(coap_log_t level, const char *format, ...) {
 void
 coap_log_impl(coap_log_t level, const char *format, ...) {
 
-	_log_printf((ROM_PTR)level, (log_t *)format, __LINE__, ROM_PSTR(format));
+	switch(level)
+	{
+	case LOG_FATAL:
+		fatal(format);
+		break;
+	case LOG_ERROR:
+		error(format);
+		break;
+	case LOG_WARN:
+		warn(format);
+		break;
+	case LOG_INFO:
+		info(format);
+		break;
+	case LOG_DEBUG:
+		debug(format);
+		break;
+	case LOG_TRACE:
+		trace(format);
+		break;
+	case LOG_OFF:
+		break;
+	}
 }
 #endif
