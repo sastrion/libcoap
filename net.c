@@ -1517,7 +1517,7 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
 	  if ((observe_action & COAP_OBSERVE_CANCEL) == 0) {
 	    coap_subscription_t *subscription;
 
-	    coap_log(LOG_DEBUG, "create new subscription\n");
+	    debug("create new subscription\n");
 	    subscription = coap_add_observer(resource, &node->remote, &token);
 	    if (subscription) {
 	      subscription->non = node->pdu->hdr->type == COAP_MESSAGE_NON;
@@ -1532,7 +1532,7 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
 
       if (observe && ((COAP_RESPONSE_CLASS(response->hdr->code) > 2)
 		      || ((observe_action & COAP_OBSERVE_CANCEL) != 0))) {
-	coap_log(LOG_DEBUG, "removed observer");
+	debug("removed observer");
 	coap_delete_observer(resource,  &node->remote, &token);
       }
 
@@ -1654,7 +1654,7 @@ coap_dispatch( coap_context_t *context ) {
        * not only the transaction but also the subscriptions we might
        * have. */
 
-      coap_log(LOG_ALERT, "got RST for message %u\n", ntohs(rcvd->pdu->hdr->id));
+    	warn("got RST for message %u\n", ntohs(rcvd->pdu->hdr->id));
 
       /* find transaction in sendqueue to stop retransmission */
       coap_remove_from_queue(&context->sendqueue, rcvd->id, &sent);
