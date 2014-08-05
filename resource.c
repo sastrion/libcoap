@@ -14,13 +14,10 @@
 
 #include "utlist.h"
 #include "mem.h"
-#include "system.h"
-#include "logging.h"
-DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 
-#define COAP_MALLOC_TYPE(Type) \
-  ((coap_##Type##_t *)sys_malloc(sizeof(coap_##Type##_t)))
-#define COAP_FREE_TYPE(Type, Object) sys_free(Object)
+#include "logging.h"
+
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 
 #define min(a,b) ((a) < (b) ? (a) : (b))
 
@@ -205,7 +202,7 @@ coap_resource_t *
 coap_resource_init(const unsigned char *uri, size_t len, int flags) {
   coap_resource_t *r;
 
-  r = (coap_resource_t *)sys_malloc(sizeof(coap_resource_t));
+  r = (coap_resource_t *)coap_malloc_type(COAP_RESOURCE, sizeof(coap_resource_t));
 
   if (r) {
     memset(r, 0, sizeof(coap_resource_t));
@@ -235,7 +232,7 @@ coap_add_attr(coap_resource_t *resource,
   if (!resource || !name)
     return NULL;
 
-  attr = (coap_attr_t *)sys_malloc(sizeof(coap_attr_t));
+  attr = (coap_attr_t *)coap_malloc_type(COAP_ATTRIBUTE, sizeof(coap_attr_t));
 
   if (attr) {
     attr->name.length = nlen;
@@ -281,7 +278,9 @@ coap_delete_attr(coap_attr_t *attr) {
     coap_free(attr->name.s);
   if (attr->flags & COAP_ATTR_FLAGS_RELEASE_VALUE)
     coap_free(attr->value.s);
-  sys_free(attr);
+
+  coap_free_type(COAP_ATTRIBUTE, attr);
+}
 }
 
 void
@@ -334,7 +333,7 @@ coap_delete_resource(coap_context_t *context, coap_key_t key) {
   if (resource->flags & COAP_RESOURCE_FLAGS_RELEASE_URI)
     coap_free(resource->uri.s);
 
-  sys_free(resource);
+  coap_free_type(COAP_RESOURCE, resource);
 
   return 1;
 }
@@ -428,7 +427,7 @@ coap_add_observer(coap_resource_t *resource,
 
   /* s points to a different subscription, so we have to create
    * another one. */
-  s = COAP_MALLOC_TYPE(subscription);
+  s = coap_malloc_type(COAP_SUBSCRIPTION, sizeof(coap_subscription_t));
 
   if (!s)
     return NULL;
@@ -475,8 +474,7 @@ coap_delete_observer(coap_resource_t *resource, const coap_address_t *observer,
 
   if (s) {
     list_remove(resource->subscribers, s);
-
-    COAP_FREE_TYPE(subscription,s);
+    coap_free_type(COAP_SUBSCRIPTION, s);
   }
 
   return s != NULL;
@@ -619,7 +617,7 @@ coap_remove_failed_observers(coap_context_t *context,
 	coap_cancel_all_messages(context, &obs->subscriber,
 				 obs->token, obs->token_length);
 
-	COAP_FREE_TYPE(subscription, obs);
+	coap_free_type(COAP_SUBSCRIPTION, obs);
       }
     }
     break;			/* break loop if observer was found */
@@ -638,7 +636,7 @@ coap_handle_failed_notify(coap_context_t *context,
   coap_resource_t *tmp;
   HASH_ITER(hh, context->resources, r, tmp) {
 #endif
-	coap_remove_failed_observers(context, r, peer, token);
+    coap_remove_failed_observers(context, r, peer, token);
   }
 }
 #endif /* WITHOUT_NOTIFY */
