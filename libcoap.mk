@@ -1,17 +1,21 @@
+get-cwd = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
+ROOT := $(call get-cwd)
+
 # List of all the board related files.
-EXTSRC += ext/libcoap/pdu.c \
-         ext/libcoap/coap_net.c \
-         ext/libcoap/debug.c \
-         ext/libcoap/encode.c \
-         ext/libcoap/uri.c \
-         ext/libcoap/coap_list.c \
-         ext/libcoap/resource.c \
-         ext/libcoap/hashkey.c \
-         ext/libcoap/str.c \
-         ext/libcoap/option.c \
-         ext/libcoap/async.c \
-         ext/libcoap/subscribe.c \
-         ext/libcoap/block.c
+EXTSRC += $(ROOT)/pdu.c \
+         $(ROOT)/coap_net.c \
+         $(ROOT)/debug.c \
+         $(ROOT)/encode.c \
+         $(ROOT)/uri.c \
+         $(ROOT)/coap_list.c \
+         $(ROOT)/resource.c \
+         $(ROOT)/hashkey.c \
+         $(ROOT)/str.c \
+         $(ROOT)/option.c \
+         $(ROOT)/async.c \
+         $(ROOT)/subscribe.c \
+         $(ROOT)/block.c \
+         $(ROOT)/impl/st-node/mem.c
 
 # Required include directories
-EXTINC += ext/libcoap
+EXTINC += $(ROOT) $(ROOT)/impl

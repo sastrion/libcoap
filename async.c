@@ -3,10 +3,10 @@
  * Copyright (C) 2010,2011 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
-/** 
+/**
  * @file async.c
  * @brief state management for asynchronous messages
  */
@@ -14,14 +14,14 @@
 #ifndef WITHOUT_ASYNC
 
 #include "config.h"
-
 #include "utlist.h"
 
 #include "mem.h"
-#include "debug.h"
 #include "async.h"
 
+#include "debug.h"
 #include "logging.h"
+
 DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 
 coap_async_state_t *
@@ -41,7 +41,7 @@ coap_register_async(coap_context_t *context, coap_address_t *peer,
   }
 
   /* store information for handling the asynchronous task */
-  s = (coap_async_state_t *)coap_malloc(sizeof(coap_async_state_t) + 
+  s = (coap_async_state_t *)coap_malloc(sizeof(coap_async_state_t) +
 					request->hdr->token_length);
   if (!s) {
     error("coap_register_async: insufficient memory\n");
@@ -63,7 +63,7 @@ coap_register_async(coap_context_t *context, coap_address_t *peer,
     s->tokenlen = request->hdr->token_length;
     memcpy(s->token, request->hdr->token, request->hdr->token_length);
   }
-    
+
   memcpy(&s->id, &id, sizeof(coap_tid_t));
 
   coap_touch_async(s);
@@ -76,12 +76,12 @@ coap_register_async(coap_context_t *context, coap_address_t *peer,
 coap_async_state_t *
 coap_find_async(coap_context_t *context, coap_tid_t id) {
   coap_async_state_t *tmp;
-  LL_SEARCH_SCALAR(context->async_state,tmp,id,id);  
+  LL_SEARCH_SCALAR(context->async_state,tmp,id,id);
   return tmp;
 }
 
 int
-coap_remove_async(coap_context_t *context, coap_tid_t id, 
+coap_remove_async(coap_context_t *context, coap_tid_t id,
 		  coap_async_state_t **s) {
   coap_async_state_t *tmp = coap_find_async(context, id);
 
@@ -92,11 +92,11 @@ coap_remove_async(coap_context_t *context, coap_tid_t id,
   return tmp != NULL;
 }
 
-void 
+void
 coap_free_async(coap_async_state_t *s) {
   if (s && (s->flags & COAP_ASYNC_RELEASE_DATA) != 0)
     coap_free(s->appdata);
-  coap_free(s); 
+  coap_free(s);
 }
 
 #else
