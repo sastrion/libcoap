@@ -2,7 +2,7 @@ get-cwd = $(patsubst %/,%,$(dir $(abspath $(lastword $(MAKEFILE_LIST)))))
 ROOT := $(call get-cwd)
 
 # List of all the board related files.
-EXTSRC += $(ROOT)/pdu.c \
+LIBSRC += $(ROOT)/pdu.c \
          $(ROOT)/coap_net.c \
          $(ROOT)/debug.c \
          $(ROOT)/encode.c \
@@ -18,4 +18,5 @@ EXTSRC += $(ROOT)/pdu.c \
          $(ROOT)/impl/st-node/mem.c
 
 # Required include directories
-EXTINC += $(ROOT) $(ROOT)/impl
+LIBINC += $(ROOT) \
+          $(ROOT)/impl
