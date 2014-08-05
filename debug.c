@@ -26,44 +26,8 @@
 #endif
 
 #include "debug.h"
-#include "libcoap/net.h"
-
-#ifdef WITH_CONTIKI
-# ifndef DEBUG
-#  define DEBUG DEBUG_PRINT
-# endif /* DEBUG */
-#include "net/uip-debug.h"
-#endif
-
-#ifdef WITH_STNODE
-DEFINE_LOG(LOG_DEFAULT_SEVERITY);
-#endif /* WITH_STNODE */
-
-static coap_log_t maxlog = LOG_WARNING;	/* default maximum log level */
-
-const char *coap_package_name() {
-  return PACKAGE_NAME;
-}
-
-const char *coap_package_version() {
-  return PACKAGE_STRING;
-}
-
-coap_log_t 
-coap_get_log_level() {
-  return maxlog;
-}
-
-void
-coap_set_log_level(coap_log_t level) {
-  maxlog = level;
-}
-#ifndef WITH_STNODE
-/* this array has the same order as the type log_t */
-static char *loglevels[] = {
-  "EMRG", "ALRT", "CRIT", "ERR", "WARN", "NOTE", "INFO", "DEBG" 
-};
-#endif
+#include "coap_net.h"
+#include "net.h"
 
 #ifdef HAVE_TIME_H
 
@@ -91,7 +55,6 @@ print_timestamp(char *s, size_t len, coap_tick_t t) {
 
 #endif /* HAVE_TIME_H */
 
-#ifndef NDEBUG
 
 #ifndef HAVE_STRNLEN
 /** 
@@ -145,10 +108,6 @@ print_readable( const unsigned char *data, unsigned int len,
   return cnt;
 }
 
-#ifndef min
-#define min(a,b) ((a) < (b) ? (a) : (b))
-#endif
-
 size_t
 coap_print_addr(const struct coap_address_t *addr, unsigned char *buf, size_t len) {
 #ifdef HAVE_ARPA_INET_H
@@ -194,52 +153,20 @@ coap_print_addr(const struct coap_address_t *addr, unsigned char *buf, size_t le
 
   return buf + len - p;
 #else /* HAVE_ARPA_INET_H */
-# if WITH_CONTIKI
-  unsigned char *p = buf;
-  uint8_t i;
-#  if WITH_UIP6
-  const unsigned char hex[] = "0123456789ABCDEF";
-
-  if (len < 41)
-    return 0;
-
-  *p++ = '[';
-
-  for (i=0; i < 16; i += 2) {
-    if (i) {
-      *p++ = ':';
-    }
-    *p++ = hex[(addr->addr.u8[i] & 0xf0) >> 4];
-    *p++ = hex[(addr->addr.u8[i] & 0x0f)];
-    *p++ = hex[(addr->addr.u8[i+1] & 0xf0) >> 4];
-    *p++ = hex[(addr->addr.u8[i+1] & 0x0f)];
-  }
-  *p++ = ']';
-#  else /* WITH_UIP6 */
-#   warning "IPv4 network addresses will not be included in debug output"
-
-  if (len < 21)
-    return 0;
-#  endif /* WITH_UIP6 */
-  if (buf + len - p < 6)
-    return 0;
-
 #ifdef HAVE_SNPRINTF
-  p += snprintf((char *)p, buf + len - p + 1, ":%d", uip_htons(addr->port));
-#else /* HAVE_SNPRINTF */
-  /* @todo manual conversion of port number */
-#endif /* HAVE_SNPRINTF */
-
+  unsigned char *p = buf;
+  p += snprintf((char *)p, buf + len - p + 1, "%d.%d.%d.%d:%d",
+		  addr->addr.u8[0], addr->addr.u8[1], addr->addr.u8[2], addr->addr.u8[3],
+		  addr->port);
   return p - buf;
-# else /* WITH_CONTIKI */
+#else /* HAVE_SNPRINTF */
   /* TODO: output addresses manually */
 #   warning "inet_ntop() not available, network addresses will not be included in debug output"
-# endif /* WITH_CONTIKI */
+#endif /* HAVE_SNPRINTF */
   return 0;
 #endif
 }
 
-#ifndef WITH_CONTIKI
 void
 coap_show_pdu(const coap_pdu_t *pdu) {
   unsigned char buf[COAP_MAX_PDU_SIZE]; /* need some space for output creation */
@@ -295,116 +222,4 @@ coap_show_pdu(const coap_pdu_t *pdu) {
   fflush(COAP_DEBUG_FD);
 }
 
-#else /* WITH_CONTIKI */
 
-void
-coap_show_pdu(const coap_pdu_t *pdu) {
-  unsigned char buf[80]; /* need some space for output creation */
-
-  PRINTF("v:%d t:%d oc:%d c:%d id:%u", 
-	  pdu->hdr->version, pdu->hdr->type,
-	  pdu->hdr->optcnt, pdu->hdr->code, uip_ntohs(pdu->hdr->id));
-
-  /* show options, if any */
-  if (pdu->hdr->optcnt) {
-    coap_opt_iterator_t opt_iter;
-    coap_opt_t *option;
-    coap_option_iterator_init((coap_pdu_t *)pdu, &opt_iter, COAP_OPT_ALL);
-
-    PRINTF(" o:");
-    while ((option = coap_option_next(&opt_iter))) {
-
-      if (print_readable(COAP_OPT_VALUE(option), 
-			 COAP_OPT_LENGTH(option), 
-			 buf, sizeof(buf), 0))
-	PRINTF(" %d:%s", opt_iter.type, buf);
-    }
-  }
-  
-  if (pdu->data < (unsigned char *)pdu->hdr + pdu->length) {
-    print_readable(pdu->data, 
-		   (unsigned char *)pdu->hdr + pdu->length - pdu->data, 
-		   buf, sizeof(buf), 0 );
-    PRINTF(" d:%s", buf);
-  }
-  PRINTF("\r\n");
-}
-#endif /* WITH_CONTIKI */
-
-#endif /* NDEBUG */
-
-#if defined(WITH_POSIX) | defined(WITH_LWIP)
-void 
-coap_log_impl(coap_log_t level, const char *format, ...) {
-  char timebuf[32];
-  coap_tick_t now;
-  va_list ap;
-  FILE *log_fd;
-
-  if (maxlog < level)
-    return;
-  
-  log_fd = level <= LOG_CRIT ? COAP_ERR_FD : COAP_DEBUG_FD;
-
-  coap_ticks(&now);
-  if (print_timestamp(timebuf,sizeof(timebuf), now))
-    fprintf(log_fd, "%s ", timebuf);
-
-  if (level <= LOG_DEBUG)
-    fprintf(log_fd, "%s ", loglevels[level]);
-
-  va_start(ap, format);
-  vfprintf(log_fd, format, ap);
-  va_end(ap);
-  fflush(log_fd);
-}
-#elif defined(WITH_CONTIKI)
-void 
-coap_log_impl(coap_log_t level, const char *format, ...) {
-  char timebuf[32];
-  coap_tick_t now;
-  va_list ap;
-
-  if (maxlog < level)
-    return;
-  
-  coap_ticks(&now);
-  if (print_timestamp(timebuf,sizeof(timebuf), now))
-    PRINTF("%s ", timebuf);
-
-  if (level <= LOG_DEBUG)
-    PRINTF("%s ", loglevels[level]);
-
-  va_start(ap, format);
-  PRINTF(format, ap);
-  va_end(ap);
-}
-#elif defined(WITH_STNODE)
-void
-coap_log_impl(coap_log_t level, const char *format, ...) {
-
-	switch(level)
-	{
-	case LOG_FATAL:
-		fatal(format);
-		break;
-	case LOG_ERROR:
-		error(format);
-		break;
-	case LOG_WARN:
-		warn(format);
-		break;
-	case LOG_INFO:
-		info(format);
-		break;
-	case LOG_DEBUG:
-		debug(format);
-		break;
-	case LOG_TRACE:
-		trace(format);
-		break;
-	case LOG_OFF:
-		break;
-	}
-}
-#endif

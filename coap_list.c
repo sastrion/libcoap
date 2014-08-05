@@ -15,6 +15,8 @@
 #include "mem.h"
 #include "coap_list.h"
 
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
+
 int
 coap_insert(coap_list_t **queue, coap_list_t *node,
 	    int (*order)(void *, void *node) ) {
@@ -74,9 +76,7 @@ coap_list_t *
 coap_new_listnode(void *data, void (*delete_func)(void *) ) {
   coap_list_t *node = coap_malloc( sizeof(coap_list_t) );
   if ( ! node ) {
-#ifndef NDEBUG
-    coap_log(LOG_CRIT, "coap_new_listnode: malloc\n");
-#endif
+    error("coap_new_listnode: malloc\n");
     return NULL;
   }
 

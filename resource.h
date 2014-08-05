@@ -26,19 +26,16 @@
 #define COAP_RESOURCE_CHECK_TIME 2
 #endif /* COAP_RESOURCE_CHECK_TIME */
 
-#ifndef WITH_CONTIKI
 #  ifdef COAP_RESOURCES_NOHASH
 #    include "utlist.h"
 #  else
 #    include "uthash.h"
 #  endif
-#else /* WITH_CONTIKI */
-#endif /* WITH_CONTIKI */
 #include "hashkey.h"
 #include "async.h"
 #include "str.h"
 #include "pdu.h"
-#include "libcoap/net.h"
+#include "coap_net.h"
 #include "subscribe.h"
 
 /** Definition of message handler function (@sa coap_resource_t). */
@@ -74,19 +71,13 @@ typedef struct coap_resource_t {
 
   coap_key_t key;	/**< the actual key bytes for this resource */
 
-#ifndef WITH_CONTIKI
 #ifdef COAP_RESOURCES_NOHASH
   struct coap_resource_t *next;
 #else
   UT_hash_handle hh;
 #endif
-#endif /* WITH_CONTIKI */
 
-#ifndef WITH_CONTIKI
   coap_attr_t *link_attr; /**< attributes to be included with the link format */
-#else /* WITH_CONTIKI */
-  LIST_STRUCT(link_attr); /**< attributes to be included with the link format */
-#endif /* WITH_CONTIKI */
   LIST_STRUCT(subscribers); /**< list of observers for this resource */
 
 
@@ -97,6 +88,48 @@ typedef struct coap_resource_t {
   int flags;
 
 } coap_resource_t;
+
+/* Helper functions for conditional output of character sequences into
+ * a given buffer. The first Offset characters are skipped.
+ */
+
+/**
+ * Writes Char to Pdu if Offset is zero. Otherwise, Char is not written
+ * and Offset is decremented.
+ */
+#define PRINT_WITH_OFFSET(Pdu,Left,Offset,Char)			\
+  if ((Offset) == 0) {									\
+    if((Left)>0) {										\
+      mbuf_write(Pdu->mbuf, Char, 1, Pdu->length++);	\
+      (Left)--;											\
+    }													\
+  } else {												\
+    (Offset)--;											\
+  }
+
+/**
+ * Writes Char to Buf if Offset is zero and Pdu is not empty
+ * Increases counter regardless of Pdu (used to obtain length
+ * prior to actual writing)
+ */
+#define PRINT_COND_WITH_OFFSET(Pdu,Left,Offset,Char,Result) {		\
+    if (Pdu) {														\
+      PRINT_WITH_OFFSET(Pdu,Left,Offset,Char);						\
+    }																\
+    (Result)++;														\
+  }
+
+/**
+ * Copies at most Length characters of Str to Pdu. The first Offset
+ * characters are skipped. Output may be truncated to Left
+ * characters.
+ */
+#define COPY_COND_WITH_OFFSET(Pdu,Left,Offset,Str,Length,Result) {		\
+    size_t i;															\
+    for (i = 0; i < (Length); i++) {									\
+      PRINT_COND_WITH_OFFSET((Pdu), (Left), (Offset), Str+i, (Result)); \
+    }																	\
+  }
 
 /** 
  * Creates a new resource object and initializes the link field to the
@@ -198,13 +231,9 @@ typedef unsigned int coap_print_status_t;
  * error.
  * 
  * @param resource The resource to describe.
- * @param buf      The output buffer to write the description to.
+ * @param pdu      CoAP PDU containing buffer to write to
  * @param len      Must be initialized to the length of @p buf and 
  *                 will be set to the length of the printed link description.
- * @param offset   The offset within the resource description where to
- *                 start writing into @p buf. This is useful for dealing
- *                 with the Block2 option. @p offset is updated during
- *                 output as it is consumed.
  * 
  * @return If COAP_PRINT_STATUS_ERROR is set, an error occured. Otherwise,
  *         the lower 28 bits will indicate the number of characters that
@@ -212,13 +241,8 @@ typedef unsigned int coap_print_status_t;
  *         COAP_PRINT_STATUS_TRUNC indicates that the output has been
  *         truncated. 
  */
-#ifndef WITH_STNODE
-coap_print_status_t coap_print_link(const coap_resource_t *resource, 
-		    unsigned char *buf, size_t *len, size_t *offset);
-#else /* WITH_STNODE */
 coap_print_status_t coap_print_link(const coap_resource_t *resource,
-		    coap_pdu_t *pdu, size_t *len, size_t *offset);
-#endif
+		    coap_pdu_t *pdu, size_t *left, size_t *len, size_t *offset);
 
 /** 
  * Registers the specified @p handler as message handler for the request type

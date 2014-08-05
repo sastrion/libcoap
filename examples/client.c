@@ -179,7 +179,7 @@ clear_obs(coap_context_t *ctx, const coap_address_t *remote) {
   }
 
   if (!coap_add_token(pdu, the_token.length, the_token.s)) {
-    coap_log(LOG_CRIT, "cannot add token");
+    error("cannot add token");
     goto error;
   }
 
@@ -198,7 +198,7 @@ clear_obs(coap_context_t *ctx, const coap_address_t *remote) {
   if (!coap_add_option(pdu, COAP_OPTION_OBSERVE,
 		       coap_encode_var_bytes(buf, COAP_OBSERVE_CANCEL),
 		       buf)) {
-    coap_log(LOG_CRIT, "cannot add option Observe: %u", COAP_OBSERVE_CANCEL);
+    error("cannot add option Observe: %u", COAP_OBSERVE_CANCEL);
     goto error;
   }
 
@@ -322,13 +322,12 @@ message_handler(struct coap_context_t  *ctx,
   unsigned char *databuf;
   coap_tid_t tid;
 
-#ifndef NDEBUG
-  if (LOG_DEBUG <= coap_get_log_level()) {
+  if (LOG_DEBUG <= LOG.severity) {
     debug("** process incoming %d.%02d response:\n",
 	  (received->hdr->code >> 5), received->hdr->code & 0x1F);
     coap_show_pdu(received);
   }
-#endif
+
 
   /* check if this is a response to our original request */
   if (!check_token(received)) {
@@ -962,7 +961,6 @@ main(int argc, char **argv) {
   char port_str[NI_MAXSERV] = "0";
   int opt, res;
   char *group = NULL;
-  coap_log_t log_level = LOG_WARNING;
   coap_tid_t tid = COAP_INVALID_TID;
 
   while ((opt = getopt(argc, argv, "Nb:e:f:g:m:p:s:t:o:v:A:B:O:P:T:")) != -1) {
@@ -1084,7 +1082,7 @@ main(int argc, char **argv) {
   }
 
   if (!ctx) {
-    coap_log(LOG_EMERG, "cannot create context\n");
+    fatal("cannot create context\n");
     return -1;
   }
 
@@ -1115,12 +1113,10 @@ main(int argc, char **argv) {
   if (! (pdu = coap_new_request(ctx, method, optlist)))
     return -1;
 
-#ifndef NDEBUG
-  if (LOG_DEBUG <= coap_get_log_level()) {
+  if (LOG_DEBUG <= LOG.severity) {
     debug("sending CoAP request:\n");
     coap_show_pdu(pdu);
   }
-#endif
 
   if (pdu->hdr->type == COAP_MESSAGE_CON)
     tid = coap_send_confirmed(ctx, &dst, pdu);

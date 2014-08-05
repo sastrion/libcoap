@@ -65,7 +65,7 @@ typedef unsigned int uint32_t;
 #define UTHASH_VERSION 1.9.3
 
 #ifndef uthash_fatal
-#define uthash_fatal(msg) exit(-1)        /* fatal error (out of memory,etc) */
+#define uthash_fatal(msg) return//exit(-1)        /* fatal error (out of memory,etc) */
 #endif
 #define uthash_malloc(sz) malloc(sz)      /* malloc fcn                      */
 #define uthash_free(ptr,sz) free(ptr)     /* free fcn                        */
@@ -247,7 +247,7 @@ do {                                                                            
  * This is for uthash developer only; it compiles away if HASH_DEBUG isn't defined.
  */
 #ifdef HASH_DEBUG
-#define HASH_OOPS(...) do { fprintf(stderr,__VA_ARGS__); exit(-1); } while (0)
+#define HASH_OOPS(...) do { fprintf(stderr,__VA_ARGS__); return; } while (0)//exit(-1); } while (0)
 #define HASH_FSCK(hh,head)                                                       \
 do {                                                                             \
     unsigned _bkt_i;                                                             \

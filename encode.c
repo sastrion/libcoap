@@ -6,10 +6,6 @@
  * README for terms of use. 
  */
 
-#ifndef NDEBUG
-#  include <stdio.h>
-#endif
-
 #include "config.h"
 #include "encode.h"
 

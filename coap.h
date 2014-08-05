@@ -19,7 +19,7 @@ extern "C" {
 #include "coap_list.h"
 #include "pdu.h"
 #include "option.h"
-#include "libcoap/net.h"
+#include "coap_net.h"
 #include "encode.h"
 #include "str.h"
 #include "uri.h"

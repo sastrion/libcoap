@@ -8,10 +8,8 @@
 
 #include "config.h"
 
-#ifdef WITH_STNODE
 #include "logging.h"
 DEFINE_LOG(LOG_DEFAULT_SEVERITY);
-#endif
 
 #if defined(HAVE_ASSERT_H) && !defined(assert)
 # include <assert.h>
@@ -29,66 +27,20 @@ DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 #include "option.h"
 #include "encode.h"
 
-#ifdef WITH_CONTIKI
-#include "memb.h"
-
-typedef unsigned char _pdu[sizeof(coap_pdu_t) + COAP_MAX_PDU_SIZE];
-
-MEMB(pdu_storage, _pdu, COAP_PDU_MAXCNT);
-
-void
-coap_pdu_resources_init() {
-  memb_init(&pdu_storage);
-}
-#else /* WITH_CONTIKI */
 #include "mem.h"
-#endif /* WITH_CONTIKI */
+
 
 void
 coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
   assert(pdu);
 
-#ifdef WITH_STNODE
   memset(pdu, 0, sizeof(coap_pdu_t)); /* MWAS: for st-node payload is in separate memory area */
   pdu->max_size = size;
-#else
-  memset(pdu, 0, sizeof(coap_pdu_t) + size);
-  pdu->max_size = size;
-  pdu->hdr = (coap_hdr_t *)((unsigned char *)pdu + sizeof(coap_pdu_t));
-  pdu->hdr->version = COAP_DEFAULT_VERSION;
-#endif
 
   /* data is NULL unless explicitly set by coap_add_data() */
   pdu->length = sizeof(coap_hdr_t);
 }
 
-#ifdef WITH_LWIP
-coap_pdu_t *
-coap_pdu_from_pbuf(struct pbuf *pbuf)
-{
-  LWIP_ASSERT("Can only deal with contiguous PBUFs", pbuf->tot_len == pbuf->len);
-  LWIP_ASSERT("coap_read needs to receive an exclusive copy of the incoming pbuf", pbuf->ref == 1);
-
-  void *data = pbuf->payload;
-  coap_pdu_t *result;
-
-  u8_t header_error = pbuf_header(pbuf, sizeof(coap_pdu_t));
-  LWIP_ASSERT("CoAP PDU header does not fit in existing header space", header_error == 0);
-
-  result = (coap_pdu_t *)pbuf->payload;
-
-  memset(result, 0, sizeof(coap_pdu_t));
-
-  result->max_size = pbuf->tot_len - sizeof(coap_pdu_t);
-  result->length = pbuf->tot_len - sizeof(coap_pdu_t);
-  result->hdr = data;
-  result->pbuf = pbuf;
-
-  return result;
-}
-#endif
-
-#ifdef WITH_STNODE
 #include "net.h"
 #include "system.h"
 
@@ -108,104 +60,57 @@ coap_pdu_from_mbuf(struct mbuf *mbuf)
 
   return result;
 }
-#endif
 
 coap_pdu_t *
 coap_pdu_init(unsigned char type, unsigned char code, 
 	      unsigned short id, size_t size) {
   coap_pdu_t *pdu;
-#ifdef WITH_LWIP
-    struct pbuf *p;
-#endif
-#ifdef WITH_STNODE
+
     struct mbuf *m;
-#endif
+
 
   assert(size <= COAP_MAX_PDU_SIZE);
   /* Size must be large enough to fit the header. */
   if (size < sizeof(coap_hdr_t) || size > COAP_MAX_PDU_SIZE)
     return NULL;
 
-  /* size must be large enough for hdr */
-#ifdef WITH_POSIX
-  pdu = coap_malloc(sizeof(coap_pdu_t) + size);
-#endif
-#ifdef WITH_CONTIKI
-  pdu = (coap_pdu_t *)memb_alloc(&pdu_storage);
-#endif
-#ifdef WITH_LWIP
-  p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RAM);
-  if (p != NULL) {
-    u8_t header_error = pbuf_header(p, sizeof(coap_pdu_t));
-    /* we could catch that case and allocate larger memory in advance, but then
-     * again, we'd run into greater trouble with incoming packages anyway */
-    LWIP_ASSERT("CoAP PDU header does not fit in transport header", header_error == 0);
-    pdu = p->payload;
-  } else {
-    pdu = NULL;
-  }
-#endif
-#ifdef WITH_STNODE
   //TODO: MWAS: get rid of sys_malloc
   pdu = sys_malloc(sizeof(coap_pdu_t));
   m = mbuf_new();
-#endif
+
   if (pdu) {
     coap_pdu_clear(pdu, size);
-#ifdef WITH_STNODE
     pdu->hdr = (coap_hdr_t *)((unsigned char *)m->payload);
     pdu->hdr->version = COAP_DEFAULT_VERSION;
     pdu->hdr->token_length = 0;
     pdu->mbuf = m;
     pdu->mbuf->len = sizeof(coap_hdr_t);
     pdu->mbuf->tot_len = sizeof(coap_hdr_t);
-#endif
     pdu->hdr->id = id;
     pdu->hdr->type = type;
     pdu->hdr->code = code;
-#ifdef WITH_LWIP
-    pdu->pbuf = p;
-#endif
   } 
   return pdu;
 }
 
 coap_pdu_t *
-coap_new_pdu() {
+coap_new_pdu(void) {
   coap_pdu_t *pdu;
-  
-#ifndef WITH_CONTIKI
-  pdu = coap_pdu_init(0, 0, ntohs(COAP_INVALID_TID), COAP_MAX_PDU_SIZE);
-#else /* WITH_CONTIKI */
-  pdu = coap_pdu_init(0, 0, uip_ntohs(COAP_INVALID_TID), COAP_MAX_PDU_SIZE);
-#endif /* WITH_CONTIKI */
 
-#ifndef NDEBUG
+  pdu = coap_pdu_init(0, 0, ntohs(COAP_INVALID_TID), COAP_MAX_PDU_SIZE);
   if (!pdu)
-    coap_log(LOG_CRIT, "coap_new_pdu: cannot allocate memory for new PDU\n");
-#endif
+    error("coap_new_pdu: cannot allocate memory for new PDU\n");
+
   return pdu;
 }
 
 void
 coap_delete_pdu(coap_pdu_t *pdu) {
-#ifdef WITH_POSIX
-  coap_free( pdu );
-#endif
-#ifdef WITH_LWIP
-  if (pdu != NULL) /* accepting double free as the other implementation accept that too */
-    pbuf_free(pdu->pbuf);
-#endif
-#ifdef WITH_CONTIKI
-  memb_free(&pdu_storage, pdu);
-#endif
-#ifdef WITH_STNODE
-  if (pdu != NULL)
-  {
+
+  if (pdu != NULL) {
     mbuf_free(pdu->mbuf);
     sys_free(pdu);
   }
-#endif
 }
 
 int
@@ -218,11 +123,7 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
 
   pdu->hdr->token_length = len;
   if (len)
-#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_POSIX)
-    memcpy(pdu->hdr->token, data, len);
-#elif defined(WITH_STNODE)
     mbuf_write(pdu->mbuf, data, len, pdu->length);
-#endif
 
   pdu->max_delta = 0;
   pdu->length = HEADERLENGTH;
@@ -235,10 +136,7 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
 size_t
 coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const unsigned char *data) {
   size_t optsize;
-#ifndef WITH_STNODE
-  coap_opt_t *opt;
-#endif
-  
+
   assert(pdu);
   pdu->data = NULL;
 
@@ -247,17 +145,8 @@ coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const un
     return 0;
   }
 
-#ifndef WITH_STNODE
-  opt = (unsigned char *)pdu->hdr + pdu->length;
-#endif
-
   /* encode option and check length */
-#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_POSIX)
-  optsize = coap_opt_encode(opt, pdu->max_size - pdu->length, 
-			    type - pdu->max_delta, data, len);
-#elif defined(WITH_STNODE)
   optsize = coap_opt_encode_to_mbuf(pdu, type, data, len);
-#endif
 
   if (!optsize) {
     warn("coap_add_option: cannot add option\n");
@@ -288,12 +177,7 @@ coap_add_option_later(coap_pdu_t *pdu, unsigned short type, unsigned int len) {
   opt = (unsigned char *)pdu->hdr + pdu->length;
 
   /* encode option and check length */
-#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_POSIX)
-  optsize = coap_opt_encode(opt, pdu->max_size - pdu->length,
-			    type - pdu->max_delta, NULL, len);
-#elif defined(WITH_STNODE)
   optsize = coap_opt_encode_to_mbuf(pdu, type, NULL, len);
-#endif
 
   if (!optsize) {
     warn("coap_add_option: cannot add option\n");
@@ -324,11 +208,7 @@ coap_add_data(coap_pdu_t *pdu, unsigned int len, const unsigned char *data) {
   pdu->data = (unsigned char *)pdu->hdr + pdu->length;
   *pdu->data = COAP_PAYLOAD_START;
   pdu->data++;
-#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_POSIX)
-  memcpy(pdu->data, data, len);
-#elif defined(WITH_STNODE)
   mbuf_write(pdu->mbuf, data, len, pdu->length+1);
-#endif
   pdu->length += len + 1;
   return 1;
 }

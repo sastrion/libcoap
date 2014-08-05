@@ -16,7 +16,7 @@
 #define _COAP_ASYNC_H_
 
 #include "config.h"
-#include "libcoap/net.h"
+#include "coap_net.h"
 
 #ifndef WITHOUT_ASYNC
 

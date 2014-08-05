@@ -100,9 +100,7 @@ notify(coap_context_t *context, coap_resource_t *res,
 				 &sub->subscriber.addr.sa,
 				 sub->subscriber.size, pdu) 
       == COAP_INVALID_TID) {
-#ifndef NDEBUG
     debug("coap_check_resource_list: error sending notification\n");
-#endif
     coap_delete_pdu(pdu);
   }
 #endif
@@ -164,14 +162,15 @@ coap_get_resource_from_key(coap_context_t *ctx, coap_key_t key) {
 
 coap_resource_t *
 coap_get_resource(coap_context_t *ctx, coap_uri_t *uri) {
-#ifndef NDEBUG
-  int i;
-  printf("search resource %ux", coap_uri_hash(uri));
-  for (i=0; i < uri->path.length; ++i) {
-    printf(" %02x", uri->path.s[i]);
+
+  if (LOG_DEBUG <= LOG.severity) {
+    int i;
+    printf("search resource %ux", coap_uri_hash(uri));
+    for (i=0; i < uri->path.length; ++i) {
+      printf(" %02x", uri->path.s[i]);
+    }
+    printf("\n");
   }
-  printf("\n");
-#endif
   return uri ? coap_get_resource_from_key(ctx, coap_uri_hash(uri)) : NULL;
 }
 #endif
@@ -236,9 +235,7 @@ coap_delete_resource(coap_context_t *context, coap_key_t key) {
   for (prev = NULL, node = context->resources; node;
        prev = node, node = node->next) {
     if (coap_uri_hash(COAP_RESOURCE(node)->uri) == key) {
-#ifndef NDEBUG
       debug("removed key %lu (%s)\n",key,COAP_RESOURCE(node)->uri->path.s);
-#endif
       if (!prev)
 	context->resources = node->next;
       else

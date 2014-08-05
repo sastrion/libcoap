@@ -1,6 +1,6 @@
 # List of all the board related files.
 EXTSRC += ext/libcoap/pdu.c \
-         ext/libcoap/net.c \
+         ext/libcoap/coap_net.c \
          ext/libcoap/debug.c \
          ext/libcoap/encode.c \
          ext/libcoap/uri.c \

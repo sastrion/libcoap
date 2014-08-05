@@ -21,10 +21,8 @@
 #include "debug.h"
 #include "async.h"
 
-#ifdef WITH_STNODE
 #include "logging.h"
 DEFINE_LOG(LOG_DEFAULT_SEVERITY);
-#endif
 
 coap_async_state_t *
 coap_register_async(coap_context_t *context, coap_address_t *peer,
@@ -46,7 +44,7 @@ coap_register_async(coap_context_t *context, coap_address_t *peer,
   s = (coap_async_state_t *)coap_malloc(sizeof(coap_async_state_t) + 
 					request->hdr->token_length);
   if (!s) {
-    coap_log(LOG_CRIT, "coap_register_async: insufficient memory\n");
+    error("coap_register_async: insufficient memory\n");
     return NULL;
   }
 

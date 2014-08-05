@@ -14,12 +14,12 @@
 #include "mem.h"
 #include "str.h"
 
+DEFINE_LOG(LOG_DEFAULT_SEVERITY);
+
 str *coap_new_string(size_t size) {
   str *s = coap_malloc(sizeof(str) + size + 1);
   if ( !s ) {
-#ifndef NDEBUG
-    coap_log(LOG_CRIT, "coap_new_string: malloc\n");
-#endif
+    error("coap_new_string: malloc\n");
     return NULL;
   }
 

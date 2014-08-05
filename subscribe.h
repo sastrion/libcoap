@@ -71,7 +71,7 @@ void coap_subscription_init(coap_subscription_t *);
 #include "uri.h"
 #include "list.h"
 #include "pdu.h"
-#include "libcoap/net.h"
+#include "coap_net.h"
 
 #if 0
 typedef unsigned long coap_key_t;

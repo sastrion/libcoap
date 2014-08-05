@@ -1,3 +1,28 @@
+2014-06-22 Maciej Wasilak  <wasilak@gmail.com>
+
+	Remove all occurences of WITH_POSIX, WITH_LWIP and WITH_CONTIKI
+	from following files:
+
+	* address.h
+	* async.c
+	* block.c
+	* coap_net.c
+	* coap_net.h
+	* coap_time.h
+	* debug.c
+	* debug.h
+	* encode.c
+	* encode.h
+	* option.c
+	* option.h
+	* pdu.c
+	* pdu.h
+	* prng.h
+	* resource.c
+	* resource.h
+	* t_list.h
+	* uri.c
+
 2014-03-09  Olaf Bergmann  <bergmann@tzi.org>
 
 	* net.c (coap_cancel): Removed 7.31 again and implemented new

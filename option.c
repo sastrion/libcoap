@@ -20,10 +20,8 @@
 #include "option.h"
 #include "debug.h"
 
-#ifdef WITH_STNODE
 #include "logging.h"
 DEFINE_LOG(LOG_DEFAULT_SEVERITY);
-#endif
 
 coap_opt_t *
 options_start(coap_pdu_t *pdu) {
@@ -410,10 +408,6 @@ coap_opt_encode(coap_opt_t *opt, size_t maxlen, unsigned short delta,
   return l + length;
 }
 
-
-#if defined(WITH_STNODE)
-
-
 size_t
 coap_opt_setheader_to_mbuf(coap_pdu_t *pdu, unsigned short type, size_t length) {
   size_t skip = 0;
@@ -498,4 +492,3 @@ coap_opt_encode_to_mbuf(coap_pdu_t *pdu, unsigned short type,
 
   return l + length;
 }
-#endif
