@@ -56,12 +56,13 @@ typedef struct coap_attr_t {
 #define COAP_RESOURCE_FLAGS_RELEASE_URI 0x1
 
 typedef struct coap_resource_t {
-  unsigned int dirty:1;	      /**< set to 1 if resource has changed */
-  unsigned int partiallydirty:1; /**< set to 1 if some subscribers have not yet been notified of the last change */
-  unsigned int observable:1; /**< can be observed */
-  unsigned int cacheable:1;   /**< can be cached */
+  unsigned int dirty:1;            /**< set to 1 if resource has changed */
+  unsigned int partiallydirty:1;   /**< set to 1 if some subscribers have not yet been notified of the last change */
+  unsigned int observable:1;       /**< can be observed */
+  unsigned int cacheable:1;        /**< can be cached */
+  unsigned int dynamic:1;          /**< should be freed */
 
-  /** 
+  /**
    * Used to store handlers for the four coap methods @c GET, @c POST,
    * @c PUT, and @c DELETE. coap_dispatch() will pass incoming
    * requests to the handler that corresponds to its request method or
@@ -87,6 +88,10 @@ typedef struct coap_resource_t {
   str uri;
   int flags;
 
+  /**
+   * A pointer to user data.
+   */
+  void *pdata;
 } coap_resource_t;
 
 /* Helper functions for conditional output of character sequences into
@@ -131,15 +136,24 @@ typedef struct coap_resource_t {
     }																	\
   }
 
-/** 
+/**
+ * A helper macro which can be used to create static resources.
+ */
+#define COAP_RESOURCE(_uri, _get, _post, _put, _delete) {   \
+  .uri = _uri,                                              \
+  .handler = {_get, _post, _put, _delete},                  \
+}
+
+
+/**
  * Creates a new resource object and initializes the link field to the
  * string of length @p len.  This function returns the
  * new coap_resource_t object.
- * 
+ *
  * @param uri    The URI path of the new resource.
  * @param len    The length of @p uri.
  * @param flags  Flags for memory management (in particular release of memory)
- * 
+ *
  * @return A pointer to the new object or @c NULL on error.
  */
 coap_resource_t *coap_resource_init(const unsigned char *uri, size_t len, int flags);
@@ -148,29 +162,29 @@ coap_resource_t *coap_resource_init(const unsigned char *uri, size_t len, int fl
  * Registers the given @p resource for @p context. The resource must
  * have been created by coap_resource_init(), the storage allocated
  * for the resource will be released by coap_delete_resource().
- * 
+ *
  * @param context  The context to use.
  * @param resource The resource to store.
  */
 void coap_add_resource(coap_context_t *context, coap_resource_t *resource);
 
-/** 
+/**
  * Deletes a resource identified by @p key. The storage allocated for
  * that resource is freed.
- * 
+ *
  * @param context  The context where the resources are stored.
  * @param key      The unique key for the resource to delete.
- * 
+ *
  * @return @c 1 if the resource was found (and destroyed), @c 0 otherwise.
  */
 int coap_delete_resource(coap_context_t *context, coap_key_t key);
 
-/** 
+/**
  * Registers a new attribute with the given @p resource. As the
- * attributes str fields will point to @p name and @p val the 
+ * attributes str fields will point to @p name and @p val the
  * caller must ensure that these pointers are valid during the
  * attribute's lifetime.
- * 
+ *
  * @param resource  The resource to register the attribute with.
  * @param name      The attribute's name.
  * @param nlen      Length of @p name.
@@ -195,16 +209,33 @@ coap_attr_t *coap_add_attr(coap_resource_t *resource,
  * @return The first attribute with specified @p name or @c NULL if
  *         none was found.
  */
-coap_attr_t *coap_find_attr(coap_resource_t *resource, 
-			    const unsigned char *name, size_t nlen);
+coap_attr_t *coap_find_attr(coap_resource_t *resource,
+          const unsigned char *name, size_t nlen);
 
-/** 
+/**
  * Deletes an attribute
- * 
+ *
  * @param attr  Pointer to a previously created attribute
- * 
+ *
  */
 void coap_delete_attr(coap_attr_t *attr);
+
+/**
+ * Associates user data with the given @p resource.
+ *
+ * @param resource The resource to which the data should be associated.
+ * @param p a pointer to user data
+ */
+void coap_set_user_data(coap_resource_t *resource, void *p);
+
+/**
+ * Returns pointer to user data associated with a given @p
+ * resource.
+ *
+ * @param resource The resource to get the user data.
+ * @return A pointer to user data or @c NULL if no data was associated.
+ */
+void *coap_get_user_data(coap_resource_t *resource);
 
 /**
  * Status word to encode the result of conditional print or copy
@@ -223,67 +254,67 @@ typedef unsigned int coap_print_status_t;
 #define COAP_PRINT_STATUS_ERROR 0x80000000u
 #define COAP_PRINT_STATUS_TRUNC 0x40000000u
 
-/** 
+/**
  * Writes a description of this resource in link-format to given text
  * buffer. @p len must be initialized to the maximum length of @p buf
  * and will be set to the number of characters actually written if
  * successful.  This function returns @c 1 on success or @c 0 on
  * error.
- * 
+ *
  * @param resource The resource to describe.
  * @param pdu      CoAP PDU containing buffer to write to
- * @param len      Must be initialized to the length of @p buf and 
+ * @param len      Must be initialized to the length of @p buf and
  *                 will be set to the length of the printed link description.
- * 
+ *
  * @return If COAP_PRINT_STATUS_ERROR is set, an error occured. Otherwise,
  *         the lower 28 bits will indicate the number of characters that
  *         have actually been output into @p buffer. The flag
  *         COAP_PRINT_STATUS_TRUNC indicates that the output has been
- *         truncated. 
+ *         truncated.
  */
 coap_print_status_t coap_print_link(const coap_resource_t *resource,
-		    coap_pdu_t *pdu, size_t *left, size_t *len, size_t *offset);
+        coap_pdu_t *pdu, size_t *left, size_t *len, size_t *offset);
 
-/** 
+/**
  * Registers the specified @p handler as message handler for the request type
- * @p method 
- * 
+ * @p method
+ *
  * @param resource The resource for which the handler shall be registered.
- * @param method   The CoAP request method to handle. 
+ * @param method   The CoAP request method to handle.
  * @param handler  The handler to register with @p resource.
  */
 static inline void
-coap_register_handler(coap_resource_t *resource, 
-		      unsigned char method, coap_method_handler_t handler) {
+coap_register_handler(coap_resource_t *resource,
+          unsigned char method, coap_method_handler_t handler) {
   assert(resource);
   assert(method > 0 && (size_t)(method-1) < sizeof(resource->handler)/sizeof(coap_method_handler_t));
   resource->handler[method-1] = handler;
 }
 
-/** 
+/**
  * Returns the resource identified by the unique string @p key. If no
  * resource was found, this function returns @c NULL.
- * 
+ *
  * @param context  The context to look for this resource.
  * @param key      The unique key of the resource.
- * 
+ *
  * @return A pointer to the resource or @c NULL if not found.
  */
-coap_resource_t *coap_get_resource_from_key(coap_context_t *context, 
-					    coap_key_t key);
+coap_resource_t *coap_get_resource_from_key(coap_context_t *context,
+              coap_key_t key);
 
-/** 
+/**
  * Calculates the hash key for the resource requested by the
  * Uri-Options of @p request.  This function calls coap_hash() for
- * every path segment. 
- * 
+ * every path segment.
+ *
  * @param request The requesting pdu.
  * @param key     The resulting hash is stored in @p key
  */
 void coap_hash_request_uri(const coap_pdu_t *request, coap_key_t key);
 
-/** 
- * @addtogroup observe 
+/**
+ * @addtogroup observe
  */
 
 /**
@@ -297,12 +328,12 @@ void coap_hash_request_uri(const coap_pdu_t *request, coap_key_t key);
  * @param token The token that identifies this subscription.
  * @param token_length The actual length of @p token. Must be @c 0 when
  *        @p token is @c NULL.
- * @return A pointer to the added/updated subscription information or 
+ * @return A pointer to the added/updated subscription information or
  *        @c NULL on error.
  */
-coap_subscription_t *coap_add_observer(coap_resource_t *resource, 
-				       const coap_address_t *observer,
-				       const str *token);
+coap_subscription_t *coap_add_observer(coap_resource_t *resource,
+               const coap_address_t *observer,
+               const str *token);
 
 /**
  * Returns a subscription object for given @p peer.
@@ -313,21 +344,21 @@ coap_subscription_t *coap_add_observer(coap_resource_t *resource,
  *              token.
  * @return A valid subscription if exists or @c NULL otherwise.
  */
-coap_subscription_t *coap_find_observer(coap_resource_t *resource, 
-					const coap_address_t *peer,
-					const str *token);
+coap_subscription_t *coap_find_observer(coap_resource_t *resource,
+          const coap_address_t *peer,
+          const str *token);
 
 /**
  * Marks an observer as alive.
  *
  * @param context  The CoAP context to use
  * @param observer The transport address of the observer
- * @param token    The corresponding token that has been used for 
+ * @param token    The corresponding token that has been used for
  *   the subscription
  */
-void coap_touch_observer(coap_context_t *context, 
-			 const coap_address_t *observer,
-			 const str *token);
+void coap_touch_observer(coap_context_t *context,
+       const coap_address_t *observer,
+       const str *token);
 
 /**
  * Removes any subscription for @p observer from @p resource and releases
@@ -340,11 +371,11 @@ void coap_touch_observer(coap_context_t *context,
  *                 token.
  * @return @c 1 if the observer has been deleted, @c 0 otherwise.
  */
-int coap_delete_observer(coap_resource_t *resource, 
-			  const coap_address_t *observer, 
-			  const str *token);
+int coap_delete_observer(coap_resource_t *resource,
+        const coap_address_t *observer,
+        const str *token);
 
-/** 
+/**
  * Checks for all known resources, if they are dirty and notifies
  * subscribed observers.
  */

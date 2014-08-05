@@ -215,6 +215,9 @@ coap_resource_init(const unsigned char *uri, size_t len, int flags) {
     coap_hash_path(r->uri.s, r->uri.length, r->key);
 
     r->flags = flags;
+    r->dynamic = 1;
+    r->pdata = NULL;
+
   } else {
     debug("coap_resource_init: no memory left\n");
   }
@@ -281,7 +284,17 @@ coap_delete_attr(coap_attr_t *attr) {
 
   coap_free_type(COAP_ATTRIBUTE, attr);
 }
+
+void
+coap_set_user_data(coap_resource_t *resource, void *p) {
+  resource->pdata = p;
 }
+
+void *
+coap_get_user_data(coap_resource_t *resource) {
+  return resource->pdata;
+}
+
 
 void
 coap_hash_request_uri(const coap_pdu_t *request, coap_key_t key) {
