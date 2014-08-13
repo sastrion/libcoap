@@ -85,13 +85,16 @@ typedef struct coap_resource_t {
   /**
    * Request URI for this resource. This field will point into the
    * static memory. */
-  str uri;
+  //str uri;
+  char *uri;
   int flags;
 
   /**
    * A pointer to user data.
    */
   void *pdata;
+
+  slist_element_t list;
 } coap_resource_t;
 
 /* Helper functions for conditional output of character sequences into

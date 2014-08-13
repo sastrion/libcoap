@@ -15,7 +15,8 @@ LIBSRC += $(ROOT)/pdu.c \
          $(ROOT)/async.c \
          $(ROOT)/subscribe.c \
          $(ROOT)/block.c \
-         $(ROOT)/impl/st-node/mem.c
+         $(ROOT)/impl/st-node/mem.c \
+         $(ROOT)/impl/st-node/static-resource.c
 
 # Required include directories
 LIBINC += $(ROOT) \
