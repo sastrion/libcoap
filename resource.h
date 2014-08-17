@@ -85,8 +85,8 @@ typedef struct coap_resource_t {
   /**
    * Request URI for this resource. This field will point into the
    * static memory. */
-  //str uri;
-  char *uri;
+  str uri;
+  //char *uri;
   int flags;
 
   /**

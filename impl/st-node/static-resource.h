@@ -28,7 +28,7 @@ typedef struct resource_list {
 //	slist_element_t list;
 //} rest_resource_t;
 
-#define RESOURCE(_uri, _get, _post, _put, _delete) { .uri = _uri, .handler = {_get, _post, _put, _delete} }
+#define RESOURCE(_uri, _get, _post, _put, _delete) { .uri.s = (unsigned char*)_uri, .handler = {_get, _post, _put, _delete} }
 
 void* resource_malloc(size_t size);
 void resource_free(void *p);

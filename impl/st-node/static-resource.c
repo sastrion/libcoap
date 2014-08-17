@@ -7,6 +7,7 @@
 #include "list.h"
 #include "resource.h"
 #include "static-resource.h"
+#include "mem.h"
 
 DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 
@@ -26,15 +27,7 @@ static uint16_t refcnt = 0;
  */
 inline void* resource_malloc(size_t size)
 {
-	void* p = NULL;
-	p = chHeapAlloc(&resource_heap, size);
-	if (p) {
-		trace("A[p=%p, size=%d, refcnt=%d]", p, size, refcnt++);
-		memset(p, 0, size);
-	} else {
-		warn("Failed to allocate [%d] bytes", size);
-	}
-	return p;
+	return coap_malloc_type(COAP_RESOURCE, size);
 }
 
 /**
@@ -44,8 +37,7 @@ inline void* resource_malloc(size_t size)
  */
 inline void resource_free(void *p)
 {
-	trace("F[p=%p, refcnt=%d]", p, --refcnt);
-	chHeapFree(p);
+	coap_free_type(COAP_RESOURCE, p);
 }
 
 /**
@@ -70,8 +62,9 @@ coap_resource_t* rest_create_resource(const char *uri, void *pdata, coap_method_
 	memcpy(r->handler, handlers, sizeof(r->handler));
 	r->pdata = pdata;
 	r->dynamic = 1;
-	r->uri = (char *)(p + sizeof(coap_resource_t));
-	strcpy(r->uri, uri);
+	r->uri.s = (unsigned char *)((char *)(p + sizeof(coap_resource_t)));
+	strcpy((char *)r->uri.s, uri);
+	r->uri.length = strlen(uri);
 
 	return r;
 }
@@ -94,7 +87,7 @@ void rest_remove_resource(resource_list_t *lst, const char *pattern)
 	slist_it_t it;
 	slist_for_each(&lst->resources, it) {
 		coap_resource_t *resource = slist_entry(it.q, coap_resource_t, list);
-		if (pattern && !strstr(resource->uri, pattern))
+		if (pattern && !strstr((char *)resource->uri.s, pattern))
 			continue;
 		slist_delete(&lst->resources, it.p, it.q);
 		if (resource->dynamic) {
