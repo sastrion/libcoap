@@ -46,6 +46,8 @@ DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 
 systime_t clock_offset;
 
+coap_resource_t * teo_get_resource_from_uri(coap_pdu_t *request);
+
 static inline coap_queue_t *
 coap_malloc_node(void) {
   return (coap_queue_t *)sys_malloc(sizeof(coap_queue_t));
@@ -973,13 +975,13 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
   coap_pdu_t *response = NULL;
   coap_opt_filter_t opt_filter;
   coap_resource_t *resource;
-  coap_key_t key;
+  //coap_key_t key;
 
   coap_option_filter_clear(opt_filter);
   
   /* try to find the resource from the request URI */
-  coap_hash_request_uri(node->pdu, key);
-  resource = coap_get_resource_from_key(context, key);
+  //coap_hash_request_uri(node->pdu, key);
+  resource = teo_get_resource_from_uri(node->pdu);//coap_get_resource_from_key(context, key);
   
   if (!resource) {
     /* The resource was not found. Check if the request URI happens to
@@ -989,14 +991,14 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
     switch(node->pdu->hdr->code) {
 
     case COAP_REQUEST_GET: 
-      if (is_wkc(key)) {	/* GET request for .well-known/core */
+      if (0) {//is_wkc(key)) {	/* GET request for .well-known/core */
 	debug("create default response for %s\n", COAP_DEFAULT_URI_WELLKNOWN);
 	response = wellknown_response(context, node->pdu);
 
       } else { /* GET request for any another resource, return 4.04 */
 
-	debug("GET for unknown resource 0x%02x%02x%02x%02x, return 4.04\n", 
-	      key[0], key[1], key[2], key[3]);
+	//debug("GET for unknown resource 0x%02x%02x%02x%02x, return 4.04\n",
+	//      key[0], key[1], key[2], key[3]);
 	response = 
 	  coap_new_error_response(node->pdu, COAP_RESPONSE_CODE(404), 
 				  opt_filter);
@@ -1005,8 +1007,8 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
 
     default: 			/* any other request type */
 
-      debug("unhandled request for unknown resource 0x%02x%02x%02x%02x\r\n",
-	    key[0], key[1], key[2], key[3]);
+      //debug("unhandled request for unknown resource 0x%02x%02x%02x%02x\r\n",
+	    //key[0], key[1], key[2], key[3]);
       if (!coap_is_mcast(&node->local))
 	response = coap_new_error_response(node->pdu, COAP_RESPONSE_CODE(405), 
 					   opt_filter);
@@ -1026,8 +1028,8 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
     h = resource->handler[node->pdu->hdr->code - 1];
   
   if (h) {
-    debug("call custom handler for resource 0x%02x%02x%02x%02x\n", 
-	  key[0], key[1], key[2], key[3]);
+    //debug("call custom handler for resource 0x%02x%02x%02x%02x\n",
+	  //key[0], key[1], key[2], key[3]);
     response = coap_pdu_init(node->pdu->hdr->type == COAP_MESSAGE_CON 
 			     ? COAP_MESSAGE_ACK
 			     : COAP_MESSAGE_NON,
@@ -1096,7 +1098,7 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
       warn("cannot generate response\r\n");
     }
   } else {
-    if (WANT_WKC(node->pdu, key)) {
+    if (0){//(WANT_WKC(node->pdu, key)) {
       debug("create default response for %s\n", COAP_DEFAULT_URI_WELLKNOWN);
       response = wellknown_response(context, node->pdu);
     } else
