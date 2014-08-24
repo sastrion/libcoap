@@ -113,10 +113,10 @@
 #undef STDC_HEADERS
 
 /* Define maximum size of CoAP message */
-#define COAP_MAX_PDU_SIZE 140
+#define COAP_MAX_PDU_SIZE 1280
 
 /* Define maximum size of CoAP block */
-#define COAP_MAX_BLOCK_SZX 2
+#define COAP_MAX_BLOCK_SZX 6
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */
