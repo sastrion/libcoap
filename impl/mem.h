@@ -9,6 +9,16 @@
 #ifndef _COAP_MEM_H_
 #define _COAP_MEM_H_
 
+/*
+ * This is a maximum URI length for CoAP resource served by st-node. Using longer URIs may result in buffer overflow.
+ * */
+#define TEO_URI_LENGTH 50
+/*
+ * This is a maximum user data length for CoAP resource. User data is usually held in address pointed by resource->pdata.
+ * This value should be modified to acommodate longest possible pdata. Otherwise bad things happen.
+ * */
+#define TEO_USER_DATA_LENGTH 8
+
 #include <stdlib.h>
 
 /**

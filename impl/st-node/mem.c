@@ -23,7 +23,7 @@
 #endif
 
 static MemoryPool resource_pool;
-static stkalign_t resource_buffer[MAX_RESOURCES*MEM_ALIGN_NEXT(sizeof(coap_resource_t))/sizeof(stkalign_t)];
+static stkalign_t resource_buffer[MAX_RESOURCES*MEM_ALIGN_NEXT((sizeof(coap_resource_t)+TEO_URI_LENGTH+TEO_USER_DATA_LENGTH))/sizeof(stkalign_t)];
 
 static MemoryHeap default_heap;
 static stkalign_t default_heap_buffer[STACK_ALIGN(LIBCOAP_DEFAULT_HEAP_SIZE)/sizeof(stkalign_t)];
