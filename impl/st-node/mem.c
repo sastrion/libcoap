@@ -15,24 +15,26 @@
 #include "resource.h"
 
 #ifndef MAX_RESOURCES
-#define MAX_RESOURCES                50
+#define MAX_RESOURCES                60
 #endif
 
 #ifndef LIBCOAP_DEFAULT_HEAP_SIZE
 #define LIBCOAP_DEFAULT_HEAP_SIZE    4096
 #endif
 
+#define TEO_RESOURCE_SIZE sizeof(coap_resource_t)+TEO_URI_LENGTH+TEO_USER_DATA_LENGTH
+
 static MemoryPool resource_pool;
-static stkalign_t resource_buffer[MAX_RESOURCES*MEM_ALIGN_NEXT((sizeof(coap_resource_t)+TEO_URI_LENGTH+TEO_USER_DATA_LENGTH))/sizeof(stkalign_t)];
+static stkalign_t resource_buffer[MAX_RESOURCES*MEM_ALIGN_NEXT(TEO_RESOURCE_SIZE)/sizeof(stkalign_t)];
 
 static MemoryHeap default_heap;
 static stkalign_t default_heap_buffer[STACK_ALIGN(LIBCOAP_DEFAULT_HEAP_SIZE)/sizeof(stkalign_t)];
 
 void
 coap_memory_init(void) {
-  chPoolInit(&resource_pool, sizeof(coap_resource_t), NULL);
+  chPoolInit(&resource_pool, MEM_ALIGN_NEXT(TEO_RESOURCE_SIZE), NULL);
   for (int i = 0; i < MAX_RESOURCES; i++) {
-    chPoolFree(&resource_pool, (uint8_t *)resource_buffer + i*MEM_ALIGN_NEXT(sizeof(coap_resource_t)));
+    chPoolFree(&resource_pool, (uint8_t *)resource_buffer + i*MEM_ALIGN_NEXT(TEO_RESOURCE_SIZE));
   }
   chHeapInit(&default_heap, default_heap_buffer, sizeof(default_heap_buffer));
 }
