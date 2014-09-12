@@ -936,7 +936,7 @@ wellknown_response(coap_context_t *context, coap_pdu_t *request) {
  * This function returns @c 0 when the token is unknown with this
  * peer, or a value greater than zero otherwise.
  */
-static int
+int
 coap_cancel(coap_context_t *context, const coap_queue_t *sent) {
 #ifndef WITHOUT_OBSERVE
   coap_resource_t *r;
@@ -975,13 +975,13 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
   coap_pdu_t *response = NULL;
   coap_opt_filter_t opt_filter;
   coap_resource_t *resource;
-  //coap_key_t key;
+  coap_key_t key;
 
   coap_option_filter_clear(opt_filter);
   
   /* try to find the resource from the request URI */
-  //coap_hash_request_uri(node->pdu, key);
-  resource = teo_get_resource_from_uri(node->pdu);//coap_get_resource_from_key(context, key);
+  coap_hash_request_uri(node->pdu, key);
+  resource = coap_get_resource_from_key(context, key);
   
   if (!resource) {
     /* The resource was not found. Check if the request URI happens to
@@ -1113,7 +1113,7 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
   }  
 }
 
-static inline void
+void
 handle_response(coap_context_t *context, 
 		coap_queue_t *sent, coap_queue_t *rcvd) {
 
@@ -1135,7 +1135,7 @@ handle_response(coap_context_t *context,
   }
 }
 
-static inline int
+int
 #ifdef __GNUC__
 handle_locally(coap_context_t *context __attribute__ ((unused)), 
 	       coap_queue_t *node __attribute__ ((unused))) {
