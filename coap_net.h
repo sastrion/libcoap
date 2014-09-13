@@ -438,6 +438,20 @@ int coap_option_check_critical(coap_context_t *ctx,
 			       coap_pdu_t *pdu,
 			       coap_opt_filter_t unknown);
 
+
+void
+handle_response(coap_context_t *context,
+		coap_queue_t *sent, coap_queue_t *rcvd);
+int
+coap_cancel(coap_context_t *context, const coap_queue_t *sent);
+int
+#ifdef __GNUC__
+handle_locally(coap_context_t *context __attribute__ ((unused)),
+	       coap_queue_t *node __attribute__ ((unused)));
+#else /* not a GCC */
+handle_locally(coap_context_t *context, coap_queue_t *node);
+#endif /* GCC */
+
 #ifdef __cplusplus
 }
 #endif
