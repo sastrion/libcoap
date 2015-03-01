@@ -304,6 +304,8 @@ coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *pdu) {
   assert(data);
   assert(pdu);
 
+  pdu->payload_offset = (unsigned short)length;
+
   if (pdu->max_size < length) {
     debug("insufficient space to store parsed PDU\n");
     return 0;
@@ -360,6 +362,7 @@ coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *pdu) {
   if (length) {
     assert(*opt == COAP_PAYLOAD_START);
     opt++; length--;
+    pdu->payload_offset -= (unsigned short)length;
 
     if (!length) {
       debug("coap_pdu_parse: message ending in payload start marker\n");

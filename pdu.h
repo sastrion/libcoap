@@ -222,6 +222,7 @@ typedef struct {
   unsigned short max_delta;	/**< highest option number */
   unsigned short length;	/**< PDU length (including header, options, data)  */
   unsigned char *data;		/**< payload */
+  unsigned short payload_offset;	/**< payload offset */
   struct mbuf *mbuf;        /**< mbuf */
 } coap_pdu_t;
 
