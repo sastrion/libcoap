@@ -9,13 +9,17 @@
 
 
 #include "coap_config.h"
+#include <stdio.h>
+#include <stdint.h>
+#include <string.h>
 
 #if defined(HAVE_ASSERT_H) && !defined(assert)
 # include <assert.h>
 #endif
 
-#include <stdio.h>
-#include <string.h>
+#if defined(ST_NODE)
+#include "mbuf.h"
+#endif
 
 #include "option.h"
 #include "debug.h"
@@ -485,8 +489,9 @@ coap_opt_encode_to_mbuf(coap_pdu_t *pdu, unsigned short type,
     return 0;
   }
 
-  if (val)
+  if (val) {
 	  mbuf_write(pdu->mbuf, val, length, pdu->length+l);
+  }
 
   return l + length;
 }

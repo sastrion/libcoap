@@ -37,6 +37,7 @@ extern "C" {
 #define COAP_TICKS_PER_SECOND CH_FREQUENCY
 
 typedef systime_t coap_tick_t;
+typedef systime_t coap_time_t;
 typedef int coap_tick_diff_t; /* TODO: MWAS: maybe it's better to use int32 */
 
 extern systime_t clock_offset;

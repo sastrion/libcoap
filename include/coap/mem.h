@@ -27,8 +27,20 @@ void coap_memory_init(void);
  * to facilitate arrays of type objects to be used instead of dynamic
  * memory management on constrained devices.
  */
-typedef enum { 
-  COAP_STRING, COAP_ATTRIBUTE_NAME, COAP_ATTRIBUTE_VALUE, COAP_PACKET, COAP_NODE, COAP_CONTEXT, COAP_ENDPOINT, COAP_PDU, COAP_PDU_BUF, COAP_RESOURCE, COAP_RESOURCEATTR
+typedef enum {
+	COAP_STRING,
+	COAP_ATTRIBUTE_NAME,
+	COAP_ATTRIBUTE_VALUE,
+	COAP_PACKET,
+	COAP_NODE,
+	COAP_CONTEXT,
+	COAP_ENDPOINT,
+	COAP_PDU,
+	COAP_PDU_BUF,
+	COAP_RESOURCE,
+	COAP_SUBSCRIPTION,
+	COAP_RESOURCEATTR,
+	COAP_OPTION,
 } coap_memory_tag_t;
 
 #ifndef WITH_LWIP

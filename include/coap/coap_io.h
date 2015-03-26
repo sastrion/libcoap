@@ -30,6 +30,11 @@
 # include <lwip/udp.h>
 #endif
 
+#ifdef ST_NODE
+#include <stdio.h>
+#include "net_common.h"
+#endif
+
 /**
  * Abstract handle that is used to identify a local network interface.
  */
@@ -59,6 +64,9 @@ typedef struct coap_endpoint_t {
   struct udp_pcb *pcb;
   struct coap_context_t *context; /**< @FIXME this was added in a hurry, not sure it confirms to the overall model --chrysn */
 #endif /* WITH_LWIP */
+#ifdef ST_NODE
+  net_socket_t *ns;
+#endif
   coap_address_t addr; /**< local interface address */
   int ifindex;
   int flags;
@@ -105,6 +113,9 @@ ssize_t coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet);
 #ifndef coap_mcast_interface
 # define coap_mcast_interface(Local) 0
 #endif
+
+/** Allocates store for a packet */
+coap_packet_t *coap_malloc_packet(void);
 
 /** Releases the storage allocated for @p packet */
 void coap_free_packet(coap_packet_t *packet);
@@ -157,6 +168,15 @@ struct coap_packet_t {
 	struct pbuf *pbuf;
 	const coap_endpoint_t *local_interface;
 	uint16_t srcport;
+};
+#endif
+
+#ifdef ST_NODE
+struct coap_packet_t {
+	struct mbuf *mbuf;
+	const coap_endpoint_t *interface;
+	coap_address_t src;  /**< the packet's source address */
+    coap_address_t dst;	 /**< the packet's destination address */
 };
 #endif
 

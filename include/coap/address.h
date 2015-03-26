@@ -57,6 +57,23 @@ typedef struct coap_address_t {
 #define _coap_is_mcast_impl(Address) 0
 
 #endif /* WITH_LWIP */
+#ifdef ST_NODE
+#include "net_addr.h"
+
+typedef struct coap_address_t {
+	uint8_t size;
+	uint16_t port;
+	ipaddr_t addr;
+} coap_address_t;
+
+#define _coap_address_equals_impl(A, B) ((A)->addr.u32 == (B)->addr.u32 && A->port == B->port)
+
+/* Multicast IPv4 addresses start with 0b1110 */
+#define _coap_is_mcast_impl(Address) ((Address)->addr.u8[0] && 0xF0 == 0xE0)
+
+#define _coap_address_isany_impl(A)  0
+
+#endif /* ST_NODE */
 #ifdef WITH_CONTIKI
 #include "uip.h"
 

@@ -289,8 +289,7 @@ coap_resource_init(const unsigned char *uri, size_t len, int flags) {
 
 #ifdef WITH_LWIP
   r = (coap_resource_t *)memp_malloc(MEMP_COAP_RESOURCE);
-#endif
-#ifndef WITH_LWIP
+#else
   r = (coap_resource_t *)coap_malloc_type(COAP_RESOURCE, sizeof(coap_resource_t));
 #endif
   if (r) {
@@ -420,13 +419,17 @@ coap_free_resource(coap_resource_t *resource) {
   assert(resource);
 
   /* delete registered attributes */
-  LL_FOREACH_SAFE(resource->link_attr, attr, tmp) coap_delete_attr(attr);
+  LL_FOREACH_SAFE(resource->link_attr, attr, tmp) {
+	  coap_delete_attr(attr);
+  }
 
   if (resource->flags & COAP_RESOURCE_FLAGS_RELEASE_URI)
     coap_free(resource->uri.s);
 
   /* free all elements from resource->subscribers */
-  LL_FOREACH_SAFE(resource->subscribers, obs, otmp) COAP_FREE_TYPE(subscription, obs);
+  LL_FOREACH_SAFE(resource->subscribers, obs, otmp) {
+	  coap_free_type(COAP_SUBSCRIPTION, obs);
+  }
 
 #ifdef WITH_LWIP
   memp_free(MEMP_COAP_RESOURCE, resource);
@@ -530,6 +533,38 @@ coap_print_link(const coap_resource_t *resource,
   return result;
 }
 
+//void coap_print_link_to_mbuf(const coap_resource_t *resource, coap_pdu_t *pdu, size_t *left, size_t *len, size_t *offset)
+//{
+//	coap_attr_t *attr;
+//
+//	PRINT_COND_WITH_OFFSET(pdu, *left, *offset, "<", *len);
+//
+//	char* asterisk = strrchr((char*) resource->uri.s, '*');
+//	if (resource->uri.length) {
+//		if (!asterisk) {
+//			COPY_COND_WITH_OFFSET(pdu, *left, *offset, resource->uri.s, resource->uri.length, *len);
+//		} else {
+//			COPY_COND_WITH_OFFSET(pdu, *left, *offset, resource->uri.s, resource->uri.length - 1, *len);
+//		}
+//	}
+//
+//	PRINT_COND_WITH_OFFSET(pdu, *left, *offset, ">", *len);
+//
+//	for (attr = resource->link_attr; attr; attr = attr->next) {
+//		PRINT_COND_WITH_OFFSET(pdu, *left, *offset, ";", *len);
+//		COPY_COND_WITH_OFFSET(pdu, *left, *offset, attr->name.s, attr->name.length, *len);
+//
+//		if (attr->value.s) {
+//			PRINT_COND_WITH_OFFSET(pdu, *left, *offset, "=", *len);
+//
+//			COPY_COND_WITH_OFFSET(pdu, *left, *offset, attr->value.s, attr->value.length, *len);
+//		}
+//	}
+//	if (resource->observable) {
+//		COPY_COND_WITH_OFFSET(pdu, *left, *offset, ";obs", 4, *len);
+//	}
+//}
+
 #ifndef WITHOUT_OBSERVE
 coap_subscription_t *
 coap_find_observer(coap_resource_t *resource, const coap_address_t *peer,
@@ -567,7 +602,7 @@ coap_add_observer(coap_resource_t *resource,
 
   /* s points to a different subscription, so we have to create
    * another one. */
-  s = COAP_MALLOC_TYPE(subscription);
+  s = coap_malloc_type(COAP_SUBSCRIPTION, sizeof(coap_subscription_t));
 
   if (!s)
     return NULL;
@@ -609,8 +644,7 @@ coap_delete_observer(coap_resource_t *resource, const coap_address_t *observer,
 
   if (resource->subscribers && s) {
     LL_DELETE(resource->subscribers, s);
-
-    COAP_FREE_TYPE(subscription,s);
+    coap_free_type(COAP_SUBSCRIPTION, s);
   }
 
   return s != NULL;
@@ -747,7 +781,7 @@ coap_remove_failed_observers(coap_context_t *context,
 	coap_cancel_all_messages(context, &obs->subscriber, 
 				 obs->token, obs->token_length);
 
-	COAP_FREE_TYPE(subscription, obs);
+	coap_free_type(COAP_SUBSCRIPTION, obs);
       }
     }
     break;			/* break loop if observer was found */

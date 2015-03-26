@@ -81,7 +81,6 @@ typedef struct coap_resource_t {
   coap_attr_t *link_attr; /**< attributes to be included with the link format */
   coap_subscription_t *subscribers; /**< list of observers for this resource */
 
-
   /**
    * Request URI for this resource. This field will point into the
    * static memory. */
@@ -94,58 +93,7 @@ typedef struct coap_resource_t {
   void *pdata;
 } coap_resource_t;
 
-/* Helper functions for conditional output of character sequences into
- * a given buffer. The first Offset characters are skipped.
- */
-
-/**
- * Writes Char to Pdu if Offset is zero. Otherwise, Char is not written
- * and Offset is decremented.
- */
-#define PRINT_WITH_OFFSET(Pdu,Left,Offset,Char)			\
-  if ((Offset) == 0) {									\
-    if((Left)>0) {										\
-      mbuf_write(Pdu->mbuf, Char, 1, Pdu->length++);	\
-      (Left)--;											\
-    }													\
-  } else {												\
-    (Offset)--;											\
-  }
-
-/**
- * Writes Char to Buf if Offset is zero and Pdu is not empty
- * Increases counter regardless of Pdu (used to obtain length
- * prior to actual writing)
- */
-#define PRINT_COND_WITH_OFFSET(Pdu,Left,Offset,Char,Result) {		\
-    if (Pdu) {														\
-      PRINT_WITH_OFFSET(Pdu,Left,Offset,Char);						\
-    }																\
-    (Result)++;														\
-  }
-
-/**
- * Copies at most Length characters of Str to Pdu. The first Offset
- * characters are skipped. Output may be truncated to Left
- * characters.
- */
-#define COPY_COND_WITH_OFFSET(Pdu,Left,Offset,Str,Length,Result) {		\
-    size_t i;															\
-    for (i = 0; i < (Length); i++) {									\
-      PRINT_COND_WITH_OFFSET((Pdu), (Left), (Offset), Str+i, (Result)); \
-    }																	\
-  }
-
-/**
- * A helper macro which can be used to create static resources.
- */
-#define COAP_RESOURCE(_uri, _get, _post, _put, _delete) {   \
-  .uri = _uri,                                              \
-  .handler = {_get, _post, _put, _delete},                  \
-}
-
-
-/**
+/** 
  * Creates a new resource object and initializes the link field to the
  * string of length @p len.  This function returns the
  * new coap_resource_t object.

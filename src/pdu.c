@@ -25,6 +25,11 @@
 #include "encode.h"
 #include "mem.h"
 
+#ifdef ST_NODE
+#include "net_common.h"
+#include "mbuf.h"
+#endif
+
 void
 coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
   assert(pdu);
@@ -33,13 +38,15 @@ coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
   /* the pdu itself is not wiped as opposed to the other implementations,
    * because we have to rely on the pbuf to be set there. */
   pdu->hdr = pdu->pbuf->payload;
-#elif defined(ST_NODE)
-  memset(pdu, 0, sizeof(coap_pdu_t)); /* MWAS: for st-node payload is in separate memory area */
 #else
   pdu->max_delta = 0;
   pdu->data = NULL;
 #endif
+#if defined(ST_NODE)
+  pdu->hdr = pdu->mbuf->payload;
+#else
   memset(pdu->hdr, 0, size);
+#endif
   pdu->max_size = size;
   pdu->hdr->version = COAP_DEFAULT_VERSION;
 
@@ -76,9 +83,7 @@ coap_pdu_from_pbuf(struct pbuf *pbuf)
 coap_pdu_t *
 coap_pdu_from_mbuf(struct mbuf *mbuf)
 {
-  coap_pdu_t *result;
-  //TODO: MWAS: get rid of sys_malloc
-  result = sys_malloc(sizeof(coap_pdu_t));
+  coap_pdu_t *result = coap_malloc_type(COAP_PDU, sizeof(coap_pdu_t));
 
   memset(result, 0, sizeof(coap_pdu_t));
 
@@ -127,8 +132,8 @@ coap_pdu_init(unsigned char type, unsigned char code,
   }
 #endif
 #ifdef ST_NODE
-  //TODO: MWAS: get rid of sys_malloc
-  pdu = sys_malloc(sizeof(coap_pdu_t));
+  pdu = coap_malloc_type(COAP_PDU, sizeof(coap_pdu_t));
+  memset(pdu, 0, sizeof(coap_pdu_t)); /* MWAS: for st-node payload is in separate memory area */
   m = mbuf_new();
 #endif
   if (pdu) {
@@ -136,7 +141,6 @@ coap_pdu_init(unsigned char type, unsigned char code,
     pdu->pbuf = p;
 #endif
 #ifdef ST_NODE
-    pdu->hdr = (coap_hdr_t *)((unsigned char *)m->payload);
     pdu->mbuf = m;
     pdu->mbuf->len = sizeof(coap_hdr_t);
     pdu->mbuf->tot_len = sizeof(coap_hdr_t);
@@ -186,7 +190,7 @@ coap_delete_pdu(coap_pdu_t *pdu) {
 #ifdef ST_NODE
   if (pdu != NULL) {
     mbuf_free(pdu->mbuf);
-    sys_free(pdu);
+    coap_free_type(COAP_PDU, pdu);
   }
 #endif
 }
@@ -217,7 +221,9 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
 size_t
 coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const unsigned char *data) {
   size_t optsize;
+#ifndef ST_NODE
   coap_opt_t *opt;
+#endif
   
   assert(pdu);
   pdu->data = NULL;
@@ -227,12 +233,11 @@ coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const un
     return 0;
   }
 
-  opt = (unsigned char *)pdu->hdr + pdu->length;
-
   /* encode option and check length */
 #ifdef ST_NODE
   optsize = coap_opt_encode_to_mbuf(pdu, type, data, len);
 #else
+  opt = (unsigned char *)pdu->hdr + pdu->length;
   optsize = coap_opt_encode(opt, pdu->max_size - pdu->length, 
 			    type - pdu->max_delta, data, len);
 #endif

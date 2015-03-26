@@ -103,6 +103,8 @@
  */
 #define COAP_RESPONSE_CODE(N) (((N)/100 << 5) | (N)%100)
 
+#define COAP_RESPONSE_CODE2(N) (((N) >> 5)*100 + ((N) & 0x1f))
+
 /* Determines the class of response code C */
 #define COAP_RESPONSE_CLASS(C) (((C) >> 5) & 0xFF)
 
@@ -228,7 +230,7 @@ typedef struct {
 #ifdef WITH_LWIP
   struct pbuf *pbuf; /**< lwIP PBUF. The package data will always reside inside the pbuf's payload, but this pointer has to be kept because no exact offset can be given. This field must not be accessed from outside, because the pbuf's reference count is checked to be 1 when the pbuf is assigned to the pdu, and the pbuf stays exclusive to this pdu. */
 #endif
-#ifdef ST_NODE2
+#ifdef ST_NODE
   unsigned short payload_offset;	/**< payload offset */
   struct mbuf *mbuf;        /**< mbuf */
 #endif
@@ -236,6 +238,10 @@ typedef struct {
 
 /** Options in coap_pdu_t are accessed with the macro COAP_OPTION. */
 #define COAP_OPTION(node) ((coap_option *)(node)->options)
+
+#define COAP_PDU_CODE(pdu) ((pdu)->hdr->code)
+#define COAP_PDU_TYPE(pdu) ((pdu)->hdr->type)
+#define COAP_PDU_ID(pdu)   ((pdu)->hdr->id)
 
 #ifdef WITH_LWIP
 /**
@@ -256,7 +262,7 @@ typedef struct {
 coap_pdu_t * coap_pdu_from_pbuf(struct pbuf *pbuf);
 #endif
 
-#ifdef ST_NODE2
+#ifdef ST_NODE
 /**
  * Creates a CoAP PDU from st-node mbuf, whose reference is passed on to
  * this function.
