@@ -70,3 +70,6 @@ examples/server.o
 tests/.deps
 tests/testdriver
 tests/*.o
+
+.project
+.cproject

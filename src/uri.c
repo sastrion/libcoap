@@ -21,9 +21,6 @@
 #include "pdu.h"
 #include "option.h"
 #include "uri.h"
-#include "logging.h"
-
-DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 
 /** 
  * A length-safe version of strchr(). This function returns a pointer

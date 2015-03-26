@@ -7,7 +7,6 @@ LIBSRC += $(ROOT)/src/pdu.c \
           $(ROOT)/src/debug.c \
           $(ROOT)/src/encode.c \
           $(ROOT)/src/uri.c \
-          $(ROOT)/src/coap_list.c \
           $(ROOT)/src/resource.c \
           $(ROOT)/src/hashkey.c \
           $(ROOT)/src/str.c \

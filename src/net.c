@@ -145,7 +145,7 @@ coap_free_node(coap_queue_t *node) {
 }
 
 #endif /* WITH_LWIP */
-#ifdef WITH_STNODE2
+#ifdef ST_NODE
 #include "system.h"
 systime_t clock_offset;
 
@@ -158,7 +158,7 @@ static inline void
 coap_free_node(coap_queue_t *node) {
   sys_free(node);
 }
-#endif /* WITH_STNODE2 */
+#endif /* ST_NODE */
 #ifdef WITH_CONTIKI
 # ifndef DEBUG
 #  define DEBUG DEBUG_PRINT
@@ -355,8 +355,8 @@ coap_new_context(
   if (initialized)
     return NULL;
 #endif /* WITH_CONTIKI */
-#ifdef WITH_STNODE
-  coap_context_t *c = sys_malloc( sizeof( coap_context_t ) );
+#ifdef ST_NODE
+  coap_context_t *c = sys_malloc(sizeof(coap_context_t));
 #endif /* WITH_STNODE */
 
   if (!listen_addr) {
@@ -382,7 +382,6 @@ coap_new_context(
 #ifdef WITH_CONTIKI
   coap_resources_init();
   coap_memory_init();
-  coap_pdu_resources_init();
 
   c = &the_coap_context;
   initialized = 1;
@@ -437,7 +436,7 @@ coap_new_context(
 
   return c;
 #endif
-#ifdef WITH_STNODE
+#ifdef ST_NODE
 	c->ns = net_create(NET_UDP);
 	if (!c->ns) {
 		return NULL;
@@ -480,7 +479,7 @@ coap_free_context(coap_context_t *context) {
 #endif /* WITH_CONTIKI */
 #ifdef WITH_STNODE
   net_disconnect(context->ns);
-  sys_free( context );
+  sys_free(context);
 #endif /* WITH_STNODE */
 }
 
@@ -546,7 +545,7 @@ coap_transaction_id(const coap_address_t *peer, const coap_pdu_t *pdu,
     return;
   }
 #endif
-#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(WITH_STNODE)
+#if defined(WITH_LWIP) || defined(WITH_CONTIKI) || defined(ST_NODE)
     /* FIXME: with lwip, we can do better */
     /* TODO: MWAS: check better options */
     coap_hash((const unsigned char *)&peer->port, sizeof(peer->port), h);
@@ -633,13 +632,14 @@ coap_send_impl(coap_context_t *context,
   return id;
 }
 #endif /* WITH_LWIP */
-#ifdef WITH_STNODE
+#ifdef ST_NODE
 /*
  * MWAS: st-node implementation doesn't require destination address for sending,
  * destination address is currently used only for transaction id.
  */
 coap_tid_t
 coap_send_impl(coap_context_t *context,
+           const coap_endpoint_t *local_interface,
 	       const coap_address_t *dst,
 	       coap_pdu_t *pdu) {
   coap_tid_t id = COAP_INVALID_TID;
@@ -1300,7 +1300,7 @@ coap_wellknown_response(coap_context_t *context, coap_pdu_t *request) {
   resp->length++;
   len = need_block2 ? SZX_TO_BYTES(block.szx) : resp->max_size - resp->length;
 
-#ifndef WITH_STNODE
+#ifndef ST_NODE
   result = coap_print_wellknown(context, resp->data, &len, offset, query_filter);
 #else
   result = coap_print_wellknown(context, resp, &len, offset, query_filter);

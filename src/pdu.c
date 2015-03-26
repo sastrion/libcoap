@@ -168,8 +168,13 @@ coap_new_pdu(void) {
 
 void
 coap_delete_pdu(coap_pdu_t *pdu) {
-#ifdef WITH_POSIX
-  coap_free( pdu );
+#if defined(WITH_POSIX) || defined(WITH_CONTIKI)
+  if (pdu != NULL) {
+    if (pdu->hdr != NULL) {
+      coap_free_type(COAP_PDU_BUF, pdu->hdr);
+    }
+    coap_free_type(COAP_PDU, pdu);
+  }
 #endif
 #ifdef WITH_LWIP
   if (pdu != NULL) /* accepting double free as the other implementation accept that too */
@@ -194,12 +199,13 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
     return 0;
 
   pdu->hdr->token_length = len;
-  if (len)
+  if (len) {
 #ifdef ST_NODE
     mbuf_write(pdu->mbuf, data, len, pdu->length);
 #else
     memcpy(pdu->hdr->token, data, len);
 #endif
+  }
   pdu->max_delta = 0;
   pdu->length = HEADERLENGTH;
   pdu->data = NULL;

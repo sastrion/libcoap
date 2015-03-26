@@ -29,8 +29,6 @@
 #endif
 
 #ifdef WITH_POSIX
-#include "utlist.h"
-#include "mem.h"
 
 #define COAP_MALLOC_TYPE(Type) \
   ((coap_##Type##_t *)coap_malloc(sizeof(coap_##Type##_t)))
@@ -393,7 +391,6 @@ coap_get_user_data(coap_resource_t *resource) {
   return resource->pdata;
 }
 
-
 void
 coap_hash_request_uri(const coap_pdu_t *request, coap_key_t key) {
   coap_opt_iterator_t opt_iter;
@@ -442,7 +439,6 @@ coap_free_resource(coap_resource_t *resource) {
 int
 coap_delete_resource(coap_context_t *context, coap_key_t key) {
   coap_resource_t *resource;
-  coap_attr_t *attr, *tmp;
 
   if (!context)
     return 0;
