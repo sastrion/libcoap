@@ -1,7 +1,7 @@
 /* coap -- simple implementation of the Constrained Application Protocol (CoAP)
- *         as defined in draft-ietf-core-coap
+ *         as defined in RFC 7252
  *
- * Copyright (C) 2010--2013 Olaf Bergmann <bergmann@tzi.org>
+ * Copyright (C) 2010--2015 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
  * README for terms of use. 
@@ -23,7 +23,7 @@
 #include <errno.h>
 #include <signal.h>
 
-#include "config.h"
+#include "coap_config.h"
 #include "resource.h"
 #include "coap.h"
 
@@ -37,6 +37,7 @@
 static int quit = 0;
 
 /* changeable clock base (see handle_put_time()) */
+static time_t clock_offset;
 static time_t my_clock_base = 0;
 
 struct coap_resource_t *time_resource = NULL;
@@ -47,18 +48,25 @@ struct coap_resource_t *time_resource = NULL;
 static coap_async_state_t *async = NULL;
 #endif /* WITHOUT_ASYNC */
 
+#ifdef __GNUC__
+#define UNUSED_PARAM __attribute__ ((unused))
+#else /* not a GCC */
+#define UNUSED_PARAM
+#endif /* GCC */
+
 /* SIGINT handler: set quit to 1 for graceful termination */
-void
-handle_sigint(int signum) {
+static void
+handle_sigint(int signum UNUSED_PARAM) {
   quit = 1;
 }
 
 #define INDEX "This is a test server made with libcoap (see http://libcoap.sf.net)\n" \
    	      "Copyright (C) 2010--2013 Olaf Bergmann <bergmann@tzi.org>\n\n"
 
-void 
-hnd_get_index(coap_context_t  *ctx, struct coap_resource_t *resource, 
-	      coap_address_t *peer, coap_pdu_t *request, str *token,
+static void
+hnd_get_index(coap_context_t  *ctx UNUSED_PARAM, struct coap_resource_t *resource UNUSED_PARAM, 
+	      const coap_endpoint_t *local_interface UNUSED_PARAM,
+	      coap_address_t *peer UNUSED_PARAM, coap_pdu_t *request UNUSED_PARAM, str *token UNUSED_PARAM,
 	      coap_pdu_t *response) {
   unsigned char buf[3];
 
@@ -73,8 +81,9 @@ hnd_get_index(coap_context_t  *ctx, struct coap_resource_t *resource,
   coap_add_data(response, strlen(INDEX), (unsigned char *)INDEX);
 }
 
-void 
-hnd_get_time(coap_context_t  *ctx, struct coap_resource_t *resource, 
+static void
+hnd_get_time(coap_context_t  *ctx, struct coap_resource_t *resource,
+	     const coap_endpoint_t *local_interface UNUSED_PARAM,
 	     coap_address_t *peer, coap_pdu_t *request, str *token,
 	     coap_pdu_t *response) {
   coap_opt_iterator_t opt_iter;
@@ -131,9 +140,10 @@ hnd_get_time(coap_context_t  *ctx, struct coap_resource_t *resource,
   }
 }
 
-void 
-hnd_put_time(coap_context_t  *ctx, struct coap_resource_t *resource, 
-	     coap_address_t *peer, coap_pdu_t *request, str *token,
+static void
+hnd_put_time(coap_context_t  *ctx UNUSED_PARAM, struct coap_resource_t *resource UNUSED_PARAM,
+	     const coap_endpoint_t *local_interface UNUSED_PARAM,
+	     coap_address_t *peer UNUSED_PARAM, coap_pdu_t *request, str *token UNUSED_PARAM,
 	     coap_pdu_t *response) {
   coap_tick_t t;
   size_t size;
@@ -163,10 +173,11 @@ hnd_put_time(coap_context_t  *ctx, struct coap_resource_t *resource,
   }
 }
 
-void 
-hnd_delete_time(coap_context_t  *ctx, struct coap_resource_t *resource, 
-	      coap_address_t *peer, coap_pdu_t *request, str *token,
-	      coap_pdu_t *response) {
+static void
+hnd_delete_time(coap_context_t  *ctx UNUSED_PARAM, struct coap_resource_t *resource UNUSED_PARAM,
+		const coap_endpoint_t *local_interface UNUSED_PARAM,
+		coap_address_t *peer UNUSED_PARAM, coap_pdu_t *request UNUSED_PARAM, str *token UNUSED_PARAM,
+		coap_pdu_t *response UNUSED_PARAM) {
   my_clock_base = 0;		/* mark clock as "deleted" */
   
   /* type = request->hdr->type == COAP_MESSAGE_CON  */
@@ -174,9 +185,10 @@ hnd_delete_time(coap_context_t  *ctx, struct coap_resource_t *resource,
 }
 
 #ifndef WITHOUT_ASYNC
-void 
-hnd_get_async(coap_context_t  *ctx, struct coap_resource_t *resource, 
-	      coap_address_t *peer, coap_pdu_t *request, str *token,
+static void
+hnd_get_async(coap_context_t  *ctx, struct coap_resource_t *resource UNUSED_PARAM,
+	      const coap_endpoint_t *local_interface UNUSED_PARAM,
+	      coap_address_t *peer, coap_pdu_t *request, str *token UNUSED_PARAM,
 	      coap_pdu_t *response) {
   coap_opt_iterator_t opt_iter;
   coap_opt_t *option;
@@ -206,8 +218,9 @@ hnd_get_async(coap_context_t  *ctx, struct coap_resource_t *resource,
 			      (void *)(COAP_TICKS_PER_SECOND * delay));
 }
 
-void 
-check_async(coap_context_t  *ctx, coap_tick_t now) {
+static void
+check_async(coap_context_t  *ctx, const coap_endpoint_t *local_if,
+	    coap_tick_t now) {
   coap_pdu_t *response;
   coap_async_state_t *tmp;
 
@@ -234,7 +247,7 @@ check_async(coap_context_t  *ctx, coap_tick_t now) {
 
   coap_add_data(response, 4, (unsigned char *)"done");
 
-  if (coap_send(ctx, &async->peer, response) == COAP_INVALID_TID) {
+  if (coap_send(ctx, local_if, &async->peer, response) == COAP_INVALID_TID) {
     debug("check_async: cannot send response for message %d\n", 
 	  response->hdr->id);
   }
@@ -245,7 +258,7 @@ check_async(coap_context_t  *ctx, coap_tick_t now) {
 }
 #endif /* WITHOUT_ASYNC */
 
-void
+static void
 init_resources(coap_context_t *ctx) {
   coap_resource_t *r;
 
@@ -282,7 +295,7 @@ init_resources(coap_context_t *ctx) {
 #endif /* WITHOUT_ASYNC */
 }
 
-void
+static void
 usage( const char *program, const char *version) {
   const char *p;
 
@@ -291,7 +304,7 @@ usage( const char *program, const char *version) {
     program = ++p;
 
   fprintf( stderr, "%s v%s -- a small CoAP implementation\n"
-	   "(c) 2010,2011 Olaf Bergmann <bergmann@tzi.org>\n\n"
+	   "(c) 2010,2011,2015 Olaf Bergmann <bergmann@tzi.org>\n\n"
 	   "usage: %s [-A address] [-p port]\n\n"
 	   "\t-A address\tinterface address to bind to\n"
 	   "\t-p port\t\tlisten on specified port\n"
@@ -299,7 +312,7 @@ usage( const char *program, const char *version) {
 	   program, version, program );
 }
 
-coap_context_t *
+static coap_context_t *
 get_context(const char *node, const char *port) {
   coap_context_t *ctx = NULL;  
   int s;
@@ -353,6 +366,8 @@ main(int argc, char **argv) {
   char port_str[NI_MAXSERV] = "5683";
   int opt;
   coap_log_t log_level = LOG_WARNING;
+
+  clock_offset = time(NULL);
 
   while ((opt = getopt(argc, argv, "A:p:v:")) != -1) {
     switch (opt) {
@@ -413,7 +428,7 @@ main(int argc, char **argv) {
     } else if ( result > 0 ) {	/* read from socket */
       if ( FD_ISSET( ctx->sockfd, &readfds ) ) {
 	coap_read( ctx );	/* read received data */
-	coap_dispatch( ctx );	/* and dispatch PDUs from receivequeue */
+	/* coap_dispatch( ctx );	/\* and dispatch PDUs from receivequeue *\/ */
       }
     } else {			/* timeout */
       if (time_resource) {
@@ -423,7 +438,7 @@ main(int argc, char **argv) {
 
 #ifndef WITHOUT_ASYNC
     /* check if we have to send asynchronous responses */
-    check_async(ctx, now);
+    check_async(ctx, ctx->endpoint, now);
 #endif /* WITHOUT_ASYNC */
 
 #ifndef WITHOUT_OBSERVE

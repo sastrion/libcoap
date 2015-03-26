@@ -259,7 +259,7 @@ hnd_post_test(coap_context_t  *ctx, struct coap_resource_t *resource,
   test_payload = coap_new_payload(len);
   uri = (coap_dynamic_uri_t *)coap_malloc(sizeof(coap_dynamic_uri_t) + l);
   if (!(test_payload && uri)) {
-    error("cannot allocate new resource under /test");
+    coap_log(LOG_CRIT, "cannot allocate new resource under /test");
     response->hdr->code = COAP_RESPONSE_CODE(500);    
     coap_free(test_payload);
     coap_free(uri);
@@ -536,7 +536,7 @@ init_resources(coap_context_t *ctx) {
 
   test_payload = coap_new_payload(200);
   if (!test_payload)
-    error("cannot allocate resource /test");
+    coap_log(LOG_CRIT, "cannot allocate resource /test");
   else {
     test_payload->length = 13;
     memcpy(test_payload->data, "put data here", test_payload->length);
@@ -562,7 +562,7 @@ init_resources(coap_context_t *ctx) {
    * TD_COAP_BLOCK_02 */
   test_payload = make_large("etsi_iot_01_largedata.txt");
   if (!test_payload)
-    error("cannot allocate resource /large\n");
+    coap_log(LOG_CRIT, "cannot allocate resource /large\n");
   else {
     r = coap_resource_init((unsigned char *)"large", 5, 0);
     coap_register_handler(r, COAP_REQUEST_GET, hnd_get_resource);
@@ -579,7 +579,7 @@ init_resources(coap_context_t *ctx) {
   /* For TD_COAP_CORE_12 */
   test_payload = coap_new_payload(20);
   if (!test_payload)
-    error("cannot allocate resource /seg1/seg2/seg3\n");
+    coap_log(LOG_CRIT, "cannot allocate resource /seg1/seg2/seg3\n");
   else {
     test_payload->length = 10;
     memcpy(test_payload->data, "segsegseg!", test_payload->length);
