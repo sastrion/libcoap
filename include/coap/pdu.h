@@ -10,9 +10,10 @@
 #define _PDU_H_
 
 #include "config.h"
-#include "coap_list.h"
 #include "uri.h"
 #include <stdint.h>
+
+#include "list.h"
 #include "mbuf.h"
 
 

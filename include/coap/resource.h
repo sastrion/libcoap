@@ -15,7 +15,8 @@
 #define _COAP_RESOURCE_H_
 
 #include "config.h"
-#include "t_list.h"
+#include "list.h"
+//#include "t_list.h"
 
 #if defined(HAVE_ASSERT_H) && !defined(assert)
 # include <assert.h>
@@ -35,7 +36,7 @@
 #include "async.h"
 #include "str.h"
 #include "pdu.h"
-#include "coap_net.h"
+#include "net.h"
 #include "subscribe.h"
 
 /** Definition of message handler function (@sa coap_resource_t). */
@@ -93,8 +94,6 @@ typedef struct coap_resource_t {
    * A pointer to user data.
    */
   void *pdata;
-
-  slist_element_t list;
 } coap_resource_t;
 
 /* Helper functions for conditional output of character sequences into
@@ -383,6 +382,11 @@ int coap_delete_observer(coap_resource_t *resource,
  * subscribed observers.
  */
 void coap_check_notify(coap_context_t *context);
+
+/**
+ * Invoke a visitor function for all registered resources.
+ */
+void coap_resource_visit(coap_context_t *context, int (*f)(coap_context_t *context, coap_resource_t *r));
 
 /** @} */
 

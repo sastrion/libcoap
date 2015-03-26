@@ -19,10 +19,6 @@
 #ifdef HAVE_ASSERT_H
 #include <assert.h>
 #else
-#ifndef assert
-#warning "assertions are disabled"
-#  define assert(x)
-#endif
 #endif
 
 #include <string.h>
@@ -35,8 +31,6 @@
 #ifdef HAVE_NETINET_IN_H
 #include <sys/socket.h>
 #endif
-
-#include "net.h"
 
 typedef struct coap_address_t {
 	uint8_t size;

@@ -28,7 +28,8 @@ DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 #include "encode.h"
 
 #include "mem.h"
-
+#include "net.h"
+#include "system.h"
 
 void
 coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
@@ -40,9 +41,6 @@ coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
   /* data is NULL unless explicitly set by coap_add_data() */
   pdu->length = sizeof(coap_hdr_t);
 }
-
-#include "net.h"
-#include "system.h"
 
 coap_pdu_t *
 coap_pdu_from_mbuf(struct mbuf *mbuf)

@@ -37,7 +37,7 @@
 #include "option.h"
 #include "encode.h"
 #include "block.h"
-#include "coap_net.h"
+#include "../include/coap/net.h"
 
 #include "system.h"
 #include "net.h"

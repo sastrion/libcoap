@@ -11,9 +11,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "../include/coap/list.h"
 #include "debug.h"
 #include "mem.h"
-#include "coap_list.h"
 
 DEFINE_LOG(LOG_DEFAULT_SEVERITY);
 

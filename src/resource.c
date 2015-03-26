@@ -7,9 +7,10 @@
  */
 
 #include "config.h"
-#include "coap_net.h"
 #include "debug.h"
 #include "resource.h"
+
+#include "../include/coap/net.h"
 #include "subscribe.h"
 
 #include "utlist.h"
@@ -583,6 +584,22 @@ coap_check_notify(coap_context_t *context) {
   HASH_ITER(hh, context->resources, r, tmp) {
 #endif
     coap_notify_observers(context, r);
+  }
+}
+
+void
+coap_resource_visit(coap_context_t *context, int (*f)(coap_context_t *context, coap_resource_t *r))
+{
+  coap_resource_t *r;
+#ifdef COAP_RESOURCES_NOHASH
+  LL_FOREACH(context->resources, r) {
+#else
+  coap_resource_t *tmp;
+  HASH_ITER(hh, context->resources, r, tmp) {
+#endif
+    if (f(context, r)) {
+    	return;
+    }
   }
 }
 

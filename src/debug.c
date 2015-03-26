@@ -26,7 +26,7 @@
 #endif
 
 #include "debug.h"
-#include "coap_net.h"
+#include "../include/coap/net.h"
 #include "net.h"
 
 #ifdef HAVE_TIME_H
