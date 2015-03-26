@@ -8,7 +8,7 @@
  */
 
 
-#include "config.h"
+#include "coap_config.h"
 
 #if defined(HAVE_ASSERT_H) && !defined(assert)
 # include <assert.h>
@@ -60,8 +60,9 @@ coap_opt_parse(const coap_opt_t *opt, size_t length, coap_option_t *result) {
 
   switch(result->delta) {
   case 15:
-    if (*opt != COAP_PAYLOAD_START)
+    if (*opt != COAP_PAYLOAD_START) {
       debug("ignored reserved option delta 15\n");
+    }
     return 0;
   case 14:
     /* Handle two-byte value: First, the MSB + 269 is stored as delta value.
@@ -361,7 +362,7 @@ coap_opt_setheader(coap_opt_t *opt, size_t maxlen,
     opt[0] |= length & 0x0f;
   } else if (length < 270) {
     if (maxlen < skip + 1) {
-      debug("insufficient space to encode option length %d", length);
+      debug("insufficient space to encode option length %zu", length);
       return 0;
     }
     

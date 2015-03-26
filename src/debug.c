@@ -1,12 +1,16 @@
 /* debug.c -- debug utilities
  *
- * Copyright (C) 2010--2012,2014 Olaf Bergmann <bergmann@tzi.org>
+ * Copyright (C) 2010--2012,2014--2015 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
  * README for terms of use. 
  */
 
-#include "config.h"
+#include "coap_config.h"
+
+#if defined(HAVE_STRNLEN) && defined(__GNUC__) && !defined(_GNU_SOURCE)
+#define _GNU_SOURCE 1
+#endif
 
 #if defined(HAVE_ASSERT_H) && !defined(assert)
 # include <assert.h>
@@ -26,15 +30,46 @@
 #endif
 
 #include "debug.h"
-#include "../include/coap/net.h"
 #include "net.h"
+
+#ifdef WITH_CONTIKI
+# ifndef DEBUG
+#  define DEBUG DEBUG_PRINT
+# endif /* DEBUG */
+#include "net/ip/uip-debug.h"
+#endif
+
+static coap_log_t maxlog = LOG_WARNING;	/* default maximum log level */
+
+const char *coap_package_name(void) {
+  return PACKAGE_NAME;
+}
+
+const char *coap_package_version(void) {
+  return PACKAGE_STRING;
+}
+
+coap_log_t 
+coap_get_log_level(void) {
+  return maxlog;
+}
+
+void
+coap_set_log_level(coap_log_t level) {
+  maxlog = level;
+}
+
+/* this array has the same order as the type log_t */
+static char *loglevels[] = {
+  "EMRG", "ALRT", "CRIT", "ERR", "WARN", "NOTE", "INFO", "DEBG" 
+};
 
 #ifdef HAVE_TIME_H
 
 static inline size_t
 print_timestamp(char *s, size_t len, coap_tick_t t) {
   struct tm *tmp;
-  time_t now = clock_offset + (t / COAP_TICKS_PER_SECOND);
+  time_t now = coap_ticks_to_rt(t);
   tmp = localtime(&now);
   return strftime(s, len, "%b %d %H:%M:%S", tmp);
 }
@@ -45,7 +80,7 @@ static inline size_t
 print_timestamp(char *s, size_t len, coap_tick_t t) {
 #ifdef HAVE_SNPRINTF
   return snprintf(s, len, "%u.%03u", 
-		  (unsigned int)(clock_offset + (t / COAP_TICKS_PER_SECOND)), 
+		  (unsigned int)coap_ticks_to_rt(t),
 		  (unsigned int)(t % COAP_TICKS_PER_SECOND));
 #else /* HAVE_SNPRINTF */
   /* @todo do manual conversion of timestamp */
@@ -55,6 +90,7 @@ print_timestamp(char *s, size_t len, coap_tick_t t) {
 
 #endif /* HAVE_TIME_H */
 
+#ifndef NDEBUG
 
 #ifndef HAVE_STRNLEN
 /** 
@@ -74,7 +110,7 @@ strnlen(const char *s, size_t maxlen) {
 }
 #endif /* HAVE_STRNLEN */
 
-unsigned int
+static unsigned int
 print_readable( const unsigned char *data, unsigned int len,
 		unsigned char *result, unsigned int buflen, int encode_always ) {
   const unsigned char hex[] = "0123456789ABCDEF";
@@ -107,6 +143,10 @@ print_readable( const unsigned char *data, unsigned int len,
   *result = '\0';
   return cnt;
 }
+
+#ifndef min
+#define min(a,b) ((a) < (b) ? (a) : (b))
+#endif
 
 size_t
 coap_print_addr(const struct coap_address_t *addr, unsigned char *buf, size_t len) {
@@ -153,19 +193,61 @@ coap_print_addr(const struct coap_address_t *addr, unsigned char *buf, size_t le
 
   return buf + len - p;
 #else /* HAVE_ARPA_INET_H */
-#ifdef HAVE_SNPRINTF
+# if WITH_CONTIKI
   unsigned char *p = buf;
-  p += snprintf((char *)p, buf + len - p + 1, "%d.%d.%d.%d:%d",
-		  addr->addr.u8[0], addr->addr.u8[1], addr->addr.u8[2], addr->addr.u8[3],
-		  addr->port);
-  return p - buf;
+  uint8_t i;
+#  if WITH_UIP6
+  const unsigned char hex[] = "0123456789ABCDEF";
+
+  if (len < 41)
+    return 0;
+
+  *p++ = '[';
+
+  for (i=0; i < 16; i += 2) {
+    if (i) {
+      *p++ = ':';
+    }
+    *p++ = hex[(addr->addr.u8[i] & 0xf0) >> 4];
+    *p++ = hex[(addr->addr.u8[i] & 0x0f)];
+    *p++ = hex[(addr->addr.u8[i+1] & 0xf0) >> 4];
+    *p++ = hex[(addr->addr.u8[i+1] & 0x0f)];
+  }
+  *p++ = ']';
+#  else /* WITH_UIP6 */
+#   warning "IPv4 network addresses will not be included in debug output"
+
+  if (len < 21)
+    return 0;
+#  endif /* WITH_UIP6 */
+  if (buf + len - p < 6)
+    return 0;
+
+#ifdef HAVE_SNPRINTF
+  p += snprintf((char *)p, buf + len - p + 1, ":%d", uip_htons(addr->port));
 #else /* HAVE_SNPRINTF */
+  /* @todo manual conversion of port number */
+#endif /* HAVE_SNPRINTF */
+
+  return p - buf;
+# else /* WITH_CONTIKI */
   /* TODO: output addresses manually */
 #   warning "inet_ntop() not available, network addresses will not be included in debug output"
-#endif /* HAVE_SNPRINTF */
+# endif /* WITH_CONTIKI */
   return 0;
 #endif
 }
+
+#ifdef WITH_CONTIKI
+# define fprintf(fd, ...) PRINTF(__VA_ARGS__)
+# define fflush(...)
+
+# ifdef HAVE_VPRINTF
+#  define vfprintf(fd, ...) vprintf(__VA_ARGS__)
+# else /* HAVE_VPRINTF */
+#  define vfprintf(fd, ...) PRINTF(__VA_ARGS__)
+# endif /* HAVE_VPRINTF */
+#endif /* WITH_CONTIKI */
 
 void
 coap_show_pdu(const coap_pdu_t *pdu) {
@@ -222,4 +304,31 @@ coap_show_pdu(const coap_pdu_t *pdu) {
   fflush(COAP_DEBUG_FD);
 }
 
+
+#endif /* NDEBUG */
+
+void 
+coap_log_impl(coap_log_t level, const char *format, ...) {
+  char timebuf[32];
+  coap_tick_t now;
+  va_list ap;
+  FILE *log_fd;
+
+  if (maxlog < level)
+    return;
+  
+  log_fd = level <= LOG_CRIT ? COAP_ERR_FD : COAP_DEBUG_FD;
+
+  coap_ticks(&now);
+  if (print_timestamp(timebuf,sizeof(timebuf), now))
+    fprintf(log_fd, "%s ", timebuf);
+
+  if (level <= LOG_DEBUG)
+    fprintf(log_fd, "%s ", loglevels[level]);
+
+  va_start(ap, format);
+  vfprintf(log_fd, format, ap);
+  va_end(ap);
+  fflush(log_fd);
+}
 

@@ -1,21 +1,21 @@
 /* pdu.h -- CoAP message structure
  *
- * Copyright (C) 2010--2012 Olaf Bergmann <bergmann@tzi.org>
+ * Copyright (C) 2010--2014 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use.
+ * README for terms of use. 
  */
 
 #ifndef _PDU_H_
 #define _PDU_H_
 
-#include "config.h"
+#include "coap_config.h"
 #include "uri.h"
 #include <stdint.h>
 
-#include "list.h"
-#include "mbuf.h"
-
+#ifdef WITH_LWIP
+#include <lwip/pbuf.h>
+#endif
 
 /* pre-defined constants that reflect defaults for CoAP */
 
@@ -107,13 +107,13 @@
 #define COAP_RESPONSE_CLASS(C) (((C) >> 5) & 0xFF)
 
 #ifndef SHORT_ERROR_RESPONSE
-/**
+/** 
  * Returns a human-readable response phrase for the specified CoAP
  * response @p code. This function returns @c NULL if not found.
- *
+ * 
  * @param code The response code for which the literal phrase should
  * be retrieved.
- *
+ * 
  * @return A zero-terminated string describing the error, or @c NULL
  * if not found.
  */
@@ -158,6 +158,7 @@ char *coap_response_phrase(unsigned char code);
 #define COAP_MEDIATYPE_APPLICATION_EXI               47 /* application/exi  */
 #define COAP_MEDIATYPE_APPLICATION_JSON              50 /* application/json  */
 #define COAP_MEDIATYPE_APPLICATION_MSGPACK           59 /* application/x-msgpack  */
+#define COAP_MEDIATYPE_APPLICATION_CBOR              60 /* application/cbor  */
 
 /* Note that identifiers for registered media types are in the range 0-65535. We
  * use an unallocated type here and hope for the best. */
@@ -219,17 +220,43 @@ typedef struct {
 typedef struct {
   size_t max_size;	/**< allocated storage for options and data */
 
-  coap_hdr_t *hdr;
+  coap_hdr_t *hdr;              /**< Address of the first byte of the CoAP message. This may or may not equal (coap_hdr_t*)(pdu+1) depending on the memory management implementation. */
   unsigned short max_delta;	/**< highest option number */
   unsigned short length;	/**< PDU length (including header, options, data)  */
   unsigned char *data;		/**< payload */
+
+#ifdef WITH_LWIP
+  struct pbuf *pbuf; /**< lwIP PBUF. The package data will always reside inside the pbuf's payload, but this pointer has to be kept because no exact offset can be given. This field must not be accessed from outside, because the pbuf's reference count is checked to be 1 when the pbuf is assigned to the pdu, and the pbuf stays exclusive to this pdu. */
+#endif
+#ifdef ST_NODE2
   unsigned short payload_offset;	/**< payload offset */
   struct mbuf *mbuf;        /**< mbuf */
+#endif
 } coap_pdu_t;
 
 /** Options in coap_pdu_t are accessed with the macro COAP_OPTION. */
 #define COAP_OPTION(node) ((coap_option *)(node)->options)
 
+#ifdef WITH_LWIP
+/**
+ * Creates a CoAP PDU from an lwIP @p pbuf, whose reference is passed on to
+ * this function.
+ *
+ * The pbuf is checked for being contiguous, and for having only one reference.
+ * The reference is stored in the PDU and will be freed when the PDU is freed.
+ *
+ * (For now, these are fatal errors; in future, a new pbuf might be allocated,
+ * the data copied and the passed pbuf freed).
+ *
+ * This behaves like coap_pdu_init(0, 0, 0, pbuf->tot_len), and afterwards
+ * copying the contents of the pbuf to the pdu.
+ *
+ * @return A pointer to the new PDU object or @c NULL on error.
+ */
+coap_pdu_t * coap_pdu_from_pbuf(struct pbuf *pbuf);
+#endif
+
+#ifdef ST_NODE2
 /**
  * Creates a CoAP PDU from st-node mbuf, whose reference is passed on to
  * this function.
@@ -237,26 +264,27 @@ typedef struct {
  * @return A pointer to the new PDU object or @c NULL on error.
  */
 coap_pdu_t * coap_pdu_from_mbuf(struct mbuf *mbuf);
+#endif
 
-/**
- * Creates a new CoAP PDU of given @p size (must be large enough to hold the
+/** 
+ * Creates a new CoAP PDU of given @p size (must be large enough to hold the 
  * basic CoAP message header (coap_hdr_t). The function returns a pointer to
  * the node coap_pdu_t object on success, or @c NULL on error. The storage
  * allocated for the result must be released with coap_delete_pdu().
- *
+ * 
  * @param type The type of the PDU (one of COAP_MESSAGE_CON,
- *             COAP_MESSAGE_NON, COAP_MESSAGE_ACK, COAP_MESSAGE_RST).
+ *             COAP_MESSAGE_NON, COAP_MESSAGE_ACK, COAP_MESSAGE_RST). 
  * @param code The message code.
  * @param id   The message id to set or COAP_INVALID_TID if unknown.
  * @param size The number of bytes to allocate for the actual message.
- *
+ * 
  * @return A pointer to the new PDU object or @c NULL on error.
  */
 coap_pdu_t *
-coap_pdu_init(unsigned char type, unsigned char code,
+coap_pdu_init(unsigned char type, unsigned char code, 
 	      unsigned short id, size_t size);
 
-/**
+/** 
  * Clears any contents from @p pdu and resets @c version field, @c
  * length and @c data pointers. @c max_size is set to @p size, any
  * other field is set to @c 0. Note that @p pdu must be a valid
@@ -267,9 +295,9 @@ void coap_pdu_clear(coap_pdu_t *pdu, size_t size);
 /**
  * Creates a new CoAP PDU. The object is created on the heap and must be released
  * using coap_delete_pdu();
- *
+ * 
  * @deprecated This function allocates the maximum storage for each
- * PDU. Use coap_pdu_init() instead.
+ * PDU. Use coap_pdu_init() instead. 
  */
 coap_pdu_t *coap_new_pdu(void);
 
@@ -311,7 +339,7 @@ int coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data);
  * the token must be added before coap_add_option() is called.
  * This function returns the number of bytes written or @c 0 on error.
  */
-size_t coap_add_option(coap_pdu_t *pdu, unsigned short type,
+size_t coap_add_option(coap_pdu_t *pdu, unsigned short type, 
 		       unsigned int len, const unsigned char *data);
 
 /**

@@ -6,7 +6,11 @@
  * README for terms of use. 
  */
 
-#include "config.h"
+#ifndef NDEBUG
+#  include <stdio.h>
+#endif
+
+#include "coap_config.h"
 #include "encode.h"
 
 /* Carsten suggested this when fls() is not available: */
