@@ -3,10 +3,10 @@
  * Copyright (C) 2010,2011,2015 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
-/** 
+/**
  * @file address.h
  * @brief representation of network addresses
  */
@@ -58,15 +58,14 @@ typedef struct coap_address_t {
 
 #endif /* WITH_LWIP */
 #ifdef ST_NODE
-#include "net_addr.h"
+#include "net_common.h"
 
 typedef struct coap_address_t {
-	uint8_t size;
 	uint16_t port;
 	ipaddr_t addr;
 } coap_address_t;
 
-#define _coap_address_equals_impl(A, B) ((A)->addr.u32 == (B)->addr.u32 && A->port == B->port)
+#define _coap_address_equals_impl(A, B) ((memcmp(&(A)->addr, &(B)->addr, sizeof(ipaddr_t)) == 0) && A->port == B->port)
 
 /* Multicast IPv4 addresses start with 0b1110 */
 #define _coap_is_mcast_impl(Address) ((Address)->addr.u8[0] && 0xF0 == 0xE0)
@@ -144,11 +143,11 @@ case  AF_INET6:
 }
 #endif /* WITH_POSIX */
 
-/** 
+/**
  * Resets the given coap_address_t object @p addr to its default
  * values.  In particular, the member size must be initialized to the
  * available size for storing addresses.
- * 
+ *
  * @param addr The coap_address_t object to initialize.
  */
 static inline void
@@ -175,6 +174,15 @@ coap_address_equals(const coap_address_t *a, const coap_address_t *b) {
 #endif
 
 /**
+ * Copy given address from @p src to @p dest.
+ */
+static inline void
+coap_address_copy(coap_address_t *dest, const coap_address_t *src) {
+	(void)dest;
+	(void)src;
+}
+
+/**
  * Checks if given address object @p a denotes the wildcard
  * address. This function returns @c 1 if this is the case, @c 0
  * otherwise. The parameters @p a must not be @c NULL;
@@ -189,9 +197,9 @@ coap_address_isany(const coap_address_t *a) {
  * Checks if given address @p a denotes a multicast address.  This
  * function returns @c 1 if @p a is multicast, @c 0 otherwise.
  */
-static inline int 
+static inline int
 coap_is_mcast(const coap_address_t *a) {
   return a && _coap_is_mcast_impl(a);
 }
- 
+
 #endif /* _COAP_ADDRESS_H_ */
