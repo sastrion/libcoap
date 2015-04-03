@@ -462,9 +462,9 @@ coap_free_context(coap_context_t *context) {
   coap_retransmittimer_restart(context);
 #endif
 
-  coap_delete_all_resources(context);
-
+  //coap_delete_all_resources(context);
   //coap_free_endpoint(context->endpoint);
+
 #ifndef WITH_CONTIKI
   coap_free_type(COAP_CONTEXT, context);
 #endif/* not WITH_CONTIKI */

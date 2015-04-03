@@ -3,7 +3,7 @@
  * Copyright (C) 2010--2014 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
 #include "coap_config.h"
@@ -99,11 +99,11 @@ coap_free_subscription(coap_subscription_t *subscription) {
       PRINT_COND_WITH_OFFSET((Buf), (Bufend), (Offset), (Str)[i], (Result)); \
     }									\
   }
- 
+
 static int
 match(const str *text, const str *pattern, int match_prefix, int match_substring) {
   assert(text); assert(pattern);
-  
+
   if (text->length < pattern->length)
     return 0;
 
@@ -123,7 +123,7 @@ match(const str *text, const str *pattern, int match_prefix, int match_substring
         token_length = remaining_length;
         remaining_length = 0;
       }
-      
+
       if ((match_prefix || pattern->length == token_length) &&
             memcmp(token, pattern->s, pattern->length) == 0)
         return 1;
@@ -135,22 +135,22 @@ match(const str *text, const str *pattern, int match_prefix, int match_substring
     memcmp(text->s, pattern->s, pattern->length) == 0;
 }
 
-/** 
+/**
  * Prints the names of all known resources to @p buf. This function
  * sets @p buflen to the number of bytes actually written and returns
  * @c 1 on succes. On error, the value in @p buflen is undefined and
  * the return value will be @c 0.
- * 
+ *
  * @param context The context with the resource map.
  * @param buf     The buffer to write the result.
  * @param buflen  Must be initialized to the maximum length of @p buf and will be
  *                set to the length of the well-known response on return.
  * @param offset  The offset in bytes where the output shall start and is
  *                shifted accordingly with the characters that have been
- *                processed. This parameter is used to support the block 
- *                option. 
+ *                processed. This parameter is used to support the block
+ *                option.
  * @param query_filter A filter query according to <a href="http://tools.ietf.org/html/draft-ietf-core-link-format-11#section-4.1">Link Format</a>
- * 
+ *
  * @return COAP_PRINT_STATUS_ERROR on error. Otherwise, the lower 28 bits are
  *         set to the number of bytes that have actually been written to
  *         @p buf. COAP_PRINT_STATUS_TRUNC is set when the output has been
@@ -192,15 +192,15 @@ coap_print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen
     while (resource_param.length < COAP_OPT_LENGTH(query_filter)
 	   && resource_param.s[resource_param.length] != '=')
       resource_param.length++;
-    
+
     if (resource_param.length < COAP_OPT_LENGTH(query_filter)) {
       const str *rt_attributes;
-      if (resource_param.length == 4 && 
+      if (resource_param.length == 4 &&
 	  memcmp(resource_param.s, "href", 4) == 0)
 	flags |= MATCH_URI;
 
       for (rt_attributes = _rt_attributes; rt_attributes->s; rt_attributes++) {
-        if (resource_param.length == rt_attributes->length && 
+        if (resource_param.length == rt_attributes->length &&
             memcmp(resource_param.s, rt_attributes->s, rt_attributes->length) == 0) {
           flags |= MATCH_SUBSTRING;
           break;
@@ -208,11 +208,11 @@ coap_print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen
       }
 
       /* rest is query-pattern */
-      query_pattern.s = 
+      query_pattern.s =
 	COAP_OPT_VALUE(query_filter) + resource_param.length + 1;
 
       assert((resource_param.length + 1) <= COAP_OPT_LENGTH(query_filter));
-      query_pattern.length = 
+      query_pattern.length =
 	COAP_OPT_LENGTH(query_filter) - (resource_param.length + 1);
 
      if ((query_pattern.s[0] == '/') && ((flags & MATCH_URI) == MATCH_URI)) {
@@ -220,11 +220,11 @@ coap_print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen
        query_pattern.length--;
       }
 
-      if (query_pattern.length && 
+      if (query_pattern.length &&
 	  query_pattern.s[query_pattern.length-1] == '*') {
 	query_pattern.length--;
 	flags |= MATCH_PREFIX;
-      }      
+      }
     }
   }
 #endif /* WITHOUT_QUERY_FILTER */
@@ -233,7 +233,7 @@ coap_print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen
 
 #ifndef WITHOUT_QUERY_FILTER
     if (resource_param.length) { /* there is a query filter */
-      
+
       if (flags & MATCH_URI) {	/* match resource URI */
 	if (!match(&r->uri, &query_pattern, (flags & MATCH_PREFIX) != 0, (flags & MATCH_SUBSTRING) != 0))
 	  continue;
@@ -248,7 +248,7 @@ coap_print_wellknown(coap_context_t *context, unsigned char *buf, size_t *buflen
         } else {
           unquoted_val = attr->value;
         }
-	if (!(match(&unquoted_val, &query_pattern, 
+	if (!(match(&unquoted_val, &query_pattern,
                     (flags & MATCH_PREFIX) != 0,
                     (flags & MATCH_SUBSTRING) != 0)))
 	  continue;
@@ -297,7 +297,7 @@ coap_resource_init(const unsigned char *uri, size_t len, int flags) {
 
     r->uri.s = (unsigned char *)uri;
     r->uri.length = len;
-    
+
     coap_hash_path(r->uri.s, r->uri.length, r->key);
 
     r->flags = flags;
@@ -307,12 +307,12 @@ coap_resource_init(const unsigned char *uri, size_t len, int flags) {
   } else {
     debug("coap_resource_init: no memory left\n");
   }
-  
+
   return r;
 }
 
 coap_attr_t *
-coap_add_attr(coap_resource_t *resource, 
+coap_add_attr(coap_resource_t *resource,
 	      const unsigned char *name, size_t nlen,
 	      const unsigned char *val, size_t vlen,
               int flags) {
@@ -342,12 +342,12 @@ coap_add_attr(coap_resource_t *resource,
   } else {
     debug("coap_add_attr: no memory left\n");
   }
-  
+
   return attr;
 }
 
 coap_attr_t *
-coap_find_attr(coap_resource_t *resource, 
+coap_find_attr(coap_resource_t *resource,
 	       const unsigned char *name, size_t nlen) {
   coap_attr_t *attr;
 
@@ -435,10 +435,12 @@ coap_free_resource(coap_resource_t *resource) {
   memp_free(MEMP_COAP_RESOURCE, resource);
 #endif
 #ifndef WITH_LWIP
-  coap_free_type(COAP_RESOURCE, resource);
+  if (resource->dynamic) {
+	  coap_free_type(COAP_RESOURCE, resource);
+  }
 #endif /* WITH_CONTIKI */
 }
- 
+
 int
 coap_delete_resource(coap_context_t *context, coap_key_t key) {
   coap_resource_t *resource;
@@ -448,7 +450,7 @@ coap_delete_resource(coap_context_t *context, coap_key_t key) {
 
   resource = coap_get_resource_from_key(context, key);
 
-  if (!resource) 
+  if (!resource)
     return 0;
 
   /* remove resource from list */
@@ -479,6 +481,25 @@ coap_delete_all_resources(coap_context_t *context) {
   context->resources = NULL;
 }
 
+void
+coap_delete_resource_by_pattern(coap_context_t *context, const char *pattern) {
+   coap_resource_t *res;
+   coap_resource_t *rtmp;
+
+#ifdef COAP_RESOURCES_NOHASH
+  LL_FOREACH_SAFE(context->resources, res, rtmp) {
+#else
+  HASH_ITER(hh, context->resources, res, rtmp) {
+#endif
+     if (strstr((char *)res->uri.s, pattern)) {
+       /* remove resource from list */
+         RESOURCES_DELETE(context->resources, res);
+         /* and free its allocated memory */
+         coap_free_resource(res);
+     }
+  }
+}
+
 coap_resource_t *
 coap_get_resource_from_key(coap_context_t *context, coap_key_t key) {
   coap_resource_t *result;
@@ -489,21 +510,21 @@ coap_get_resource_from_key(coap_context_t *context, coap_key_t key) {
 }
 
 coap_print_status_t
-coap_print_link(const coap_resource_t *resource, 
+coap_print_link(const coap_resource_t *resource,
 		unsigned char *buf, size_t *len, size_t *offset) {
   unsigned char *p = buf;
   const unsigned char *bufend = buf + *len;
   coap_attr_t *attr;
   coap_print_status_t result = 0;
   const size_t old_offset = *offset;
-  
+
   *len = 0;
   PRINT_COND_WITH_OFFSET(p, bufend, *offset, '<', *len);
   PRINT_COND_WITH_OFFSET(p, bufend, *offset, '/', *len);
 
-  COPY_COND_WITH_OFFSET(p, bufend, *offset, 
+  COPY_COND_WITH_OFFSET(p, bufend, *offset,
 			resource->uri.s, resource->uri.length, *len);
-  
+
   PRINT_COND_WITH_OFFSET(p, bufend, *offset, '>', *len);
 
   LL_FOREACH(resource->link_attr, attr) {
@@ -576,21 +597,21 @@ coap_find_observer(coap_resource_t *resource, const coap_address_t *peer,
 
   LL_FOREACH(resource->subscribers, s) {
     if (coap_address_equals(&s->subscriber, peer)
-	&& (!token || (token->length == s->token_length 
+	&& (!token || (token->length == s->token_length
 		       && memcmp(token->s, s->token, token->length) == 0)))
       return s;
   }
-  
+
   return NULL;
 }
 
 coap_subscription_t *
-coap_add_observer(coap_resource_t *resource, 
+coap_add_observer(coap_resource_t *resource,
 		  const coap_endpoint_t *local_interface,
 		  const coap_address_t *observer,
 		  const str *token) {
   coap_subscription_t *s;
-  
+
   assert(observer);
 
   /* Check if there is already a subscription for this peer. */
@@ -610,7 +631,7 @@ coap_add_observer(coap_resource_t *resource,
   coap_subscription_init(s);
   s->local_if = *local_interface;
   memcpy(&s->subscriber, observer, sizeof(coap_address_t));
-  
+
   if (token && token->length) {
     s->token_length = token->length;
     memcpy(s->token, token->s, min(s->token_length, 8));
@@ -701,7 +722,7 @@ coap_notify_observers(coap_context_t *context, coap_resource_t *r) {
       /* fill with observer-specific data */
       h(context, r, &obs->local_if, &obs->subscriber, NULL, &token, response);
 
-      /* TODO: do not send response and remove observer when 
+      /* TODO: do not send response and remove observer when
        *  COAP_RESPONSE_CLASS(response->hdr->code) > 2
        */
       if (response->hdr->type == COAP_MESSAGE_CON) {
@@ -758,7 +779,7 @@ coap_remove_failed_observers(coap_context_t *context,
     if (coap_address_equals(peer, &obs->subscriber) &&
 	token->length == obs->token_length &&
 	memcmp(token->s, obs->token, token->length) == 0) {
-      
+
       /* count failed notifies and remove when
        * COAP_MAX_FAILED_NOTIFY is reached */
       if (obs->fail_cnt < COAP_OBS_MAX_FAIL)
@@ -766,7 +787,7 @@ coap_remove_failed_observers(coap_context_t *context,
       else {
 	LL_DELETE(resource->subscribers, obs);
 	obs->fail_cnt = 0;
-	
+
 #ifndef NDEBUG
 	if (LOG_DEBUG <= coap_get_log_level()) {
 #ifndef INET6_ADDRSTRLEN
@@ -778,7 +799,7 @@ coap_remove_failed_observers(coap_context_t *context,
 	    debug("** removed observer %s\n", addr);
 	}
 #endif
-	coap_cancel_all_messages(context, &obs->subscriber, 
+	coap_cancel_all_messages(context, &obs->subscriber,
 				 obs->token, obs->token_length);
 
 	coap_free_type(COAP_SUBSCRIPTION, obs);
@@ -789,8 +810,8 @@ coap_remove_failed_observers(coap_context_t *context,
 }
 
 void
-coap_handle_failed_notify(coap_context_t *context, 
-			  const coap_address_t *peer, 
+coap_handle_failed_notify(coap_context_t *context,
+			  const coap_address_t *peer,
 			  const str *token) {
 
   RESOURCES_ITER(context->resources, r) {

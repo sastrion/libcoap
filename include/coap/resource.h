@@ -134,6 +134,14 @@ int coap_delete_resource(coap_context_t *context, coap_key_t key);
  */
 void coap_delete_all_resources(coap_context_t *context);
 
+/**
+ * Deletes all resources from given @p context which uri matches given @p pattern.
+ *
+ * @param context The CoAP context with the resources to be deleted.
+ * @param pattern URI pattern to match
+ */
+void coap_delete_resource_by_pattern(coap_context_t *context, const char *pattern);
+
 /** 
  * Registers a new attribute with the given @p resource. As the
  * attributes str fields will point to @p name and @p val the 
