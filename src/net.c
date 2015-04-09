@@ -442,7 +442,7 @@ coap_new_context(void) {
 
   return c;
 
- onerror:
+// onerror:
   if (c) {
    coap_free(c);
   }
@@ -623,8 +623,13 @@ coap_send_impl(coap_context_t *context,
 }
 #endif /* WITH_LWIP */
 
-coap_tid_t 
-coap_send(coap_context_t *context, 
+coap_tid_t coap_send_impl(coap_context_t *context,
+	       const coap_endpoint_t *local_interface,
+	       const coap_address_t *dst,
+	       coap_pdu_t *pdu);
+
+coap_tid_t
+coap_send(coap_context_t *context,
 	  const coap_endpoint_t *local_interface,
 	  const coap_address_t *dst, 
 	  coap_pdu_t *pdu) {
@@ -1480,7 +1485,7 @@ handle_response(coap_context_t *context,
   }
 }
 
-/*static*/ inline int
+/*static inline */ int
 #ifdef __GNUC__
 handle_locally(coap_context_t *context __attribute__ ((unused)), 
 	       coap_queue_t *node __attribute__ ((unused))) {
