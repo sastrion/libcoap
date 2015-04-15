@@ -3,7 +3,7 @@
  * Copyright (C) 2010,2011,2014 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use.
+ * README for terms of use. 
  */
 
 #ifndef _COAP_DEBUG_H_
@@ -24,8 +24,14 @@
 typedef short coap_log_t;
 #else
 /** Pre-defined log levels akin to what is used in \b syslog. */
-typedef enum { LOG_EMERG=0, LOG_ALERT, LOG_CRIT, LOG_WARNING,
-       LOG_NOTICE, LOG_INFO, LOG_DEBUG
+typedef enum {
+  LOG_EMERG=0,
+  LOG_ALERT,
+  LOG_CRIT,
+  LOG_WARNING,
+  LOG_NOTICE,
+  LOG_INFO,
+  LOG_DEBUG
 } coap_log_t;
 #endif
 
@@ -42,15 +48,14 @@ const char *coap_package_name(void);
 const char *coap_package_version(void);
 
 /**
- * Writes the given text to @c COAP_ERR_FD (for @p level <= @c
- * LOG_CRIT) or @c COAP_DEBUG_FD (for @p level >= @c LOG_WARNING). The
- * text is output only when @p level is below or equal to the log
- * level that set by coap_set_log_level().
+ * Writes the given text to @c COAP_ERR_FD (for @p level <= @c LOG_CRIT) or @c
+ * COAP_DEBUG_FD (for @p level >= @c LOG_WARNING). The text is output only when
+ * @p level is below or equal to the log level that set by coap_set_log_level().
  */
-void coap_log_impl(const char *file, int line, coap_log_t level, const char *format, ...);
+void coap_log_impl(coap_log_t level, const char *format, ...);
 
 #ifndef coap_log
-#define coap_log(...) coap_log_impl(__FILE__, __LINE__, __VA_ARGS__)
+#define coap_log(...) coap_log_impl(__VA_ARGS__)
 #endif
 
 #ifndef NDEBUG
