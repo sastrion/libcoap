@@ -3,7 +3,7 @@
  * Copyright (C) 2010--2014 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
 #include "coap_config.h"
@@ -97,7 +97,7 @@ coap_pdu_from_mbuf(struct mbuf *mbuf)
 #endif
 
 coap_pdu_t *
-coap_pdu_init(unsigned char type, unsigned char code, 
+coap_pdu_init(unsigned char type, unsigned char code,
 	      unsigned short id, size_t size) {
   coap_pdu_t *pdu;
 #ifdef WITH_LWIP
@@ -149,14 +149,14 @@ coap_pdu_init(unsigned char type, unsigned char code,
     pdu->hdr->id = id;
     pdu->hdr->type = type;
     pdu->hdr->code = code;
-  } 
+  }
   return pdu;
 }
 
 coap_pdu_t *
 coap_new_pdu(void) {
   coap_pdu_t *pdu;
-  
+
 #ifndef WITH_CONTIKI
   pdu = coap_pdu_init(0, 0, ntohs(COAP_INVALID_TID), COAP_MAX_PDU_SIZE);
 #else /* WITH_CONTIKI */
@@ -189,7 +189,9 @@ coap_delete_pdu(coap_pdu_t *pdu) {
 #endif
 #ifdef ST_NODE
   if (pdu != NULL) {
-    mbuf_free(pdu->mbuf);
+	if (pdu->mbuf != NULL) {
+		mbuf_free(pdu->mbuf);
+	}
     coap_free_type(COAP_PDU, pdu);
   }
 #endif
@@ -224,7 +226,7 @@ coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const un
 #ifndef ST_NODE
   coap_opt_t *opt;
 #endif
-  
+
   assert(pdu);
   pdu->data = NULL;
 
@@ -238,7 +240,7 @@ coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const un
   optsize = coap_opt_encode_to_mbuf(pdu, type, data, len);
 #else
   opt = (unsigned char *)pdu->hdr + pdu->length;
-  optsize = coap_opt_encode(opt, pdu->max_size - pdu->length, 
+  optsize = coap_opt_encode(opt, pdu->max_size - pdu->length,
 			    type - pdu->max_delta, data, len);
 #endif
 
@@ -339,7 +341,7 @@ typedef struct {
   char *phrase;
 } error_desc_t;
 
-/* if you change anything here, make sure, that the longest string does not 
+/* if you change anything here, make sure, that the longest string does not
  * exceed COAP_ERROR_PHRASE_LENGTH. */
 error_desc_t coap_error[] = {
   { COAP_RESPONSE_CODE(65),  "2.01 Created" },
@@ -377,7 +379,7 @@ coap_response_phrase(unsigned char code) {
 #endif
 
 /**
- * Advances *optp to next option if still in PDU. This function 
+ * Advances *optp to next option if still in PDU. This function
  * returns the number of bytes opt has been advanced or @c 0
  * on error.
  */
@@ -386,7 +388,7 @@ next_option_safe(coap_opt_t **optp, size_t *length) {
   coap_option_t option;
   size_t optsize;
 
-  assert(optp); assert(*optp); 
+  assert(optp); assert(*optp);
   assert(length);
 
   optsize = coap_opt_parse(*optp, *length, &option);
@@ -453,7 +455,7 @@ coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *pdu) {
   /* append data (including the Token) to pdu structure */
   memcpy(pdu->hdr + 1, data + sizeof(coap_hdr_t), length - sizeof(coap_hdr_t));
   pdu->length = length;
- 
+
   /* Finally calculate beginning of data block and thereby check integrity
    * of the PDU structure. */
 #endif
@@ -482,7 +484,7 @@ coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *pdu) {
       goto discard;
     }
 
-    debug("set data to %p (pdu ends at %p)\n", (unsigned char *)opt, 
+    debug("set data to %p (pdu ends at %p)\n", (unsigned char *)opt,
 	  (unsigned char *)pdu->hdr + pdu->length);
     pdu->data = (unsigned char *)opt;
   }
