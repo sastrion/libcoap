@@ -25,11 +25,11 @@
 /* pre-defined constants that reflect defaults for CoAP */
 
 #ifndef COAP_DEFAULT_RESPONSE_TIMEOUT
-#define COAP_DEFAULT_RESPONSE_TIMEOUT  2 /* response timeout in seconds */
+#define COAP_DEFAULT_RESPONSE_TIMEOUT  3 /* response timeout in seconds */
 #endif
 
 #ifndef COAP_DEFAULT_MAX_RETRANSMIT
-#define COAP_DEFAULT_MAX_RETRANSMIT    4 /* max number of retransmissions */
+#define COAP_DEFAULT_MAX_RETRANSMIT    3 /* max number of retransmissions */
 #endif
 
 #ifndef COAP_DEFAULT_PORT
@@ -138,17 +138,32 @@ char *coap_response_phrase(unsigned char code);
 #if 0 /* this does not exist any more */
 #define COAP_RESPONSE_100      40 /* 100 Continue */
 #endif
-#define COAP_RESPONSE_200      COAP_RESPONSE_CODE(200)  /* 2.00 OK */
-#define COAP_RESPONSE_201      COAP_RESPONSE_CODE(201)  /* 2.01 Created */
-#define COAP_RESPONSE_304      COAP_RESPONSE_CODE(203)  /* 2.03 Valid */
-#define COAP_RESPONSE_400      COAP_RESPONSE_CODE(400)  /* 4.00 Bad Request */
-#define COAP_RESPONSE_404      COAP_RESPONSE_CODE(404)  /* 4.04 Not Found */
-#define COAP_RESPONSE_405      COAP_RESPONSE_CODE(405)  /* 4.05 Method Not Allowed */
-#define COAP_RESPONSE_415      COAP_RESPONSE_CODE(415)  /* 4.15 Unsupported Media Type */
-#define COAP_RESPONSE_500      COAP_RESPONSE_CODE(500)  /* 5.00 Internal Server Error */
-#define COAP_RESPONSE_501      COAP_RESPONSE_CODE(501)  /* 5.01 Not Implemented */
-#define COAP_RESPONSE_503      COAP_RESPONSE_CODE(503)  /* 5.03 Service Unavailable */
-#define COAP_RESPONSE_504      COAP_RESPONSE_CODE(504)  /* 5.04 Gateway Timeout */
+#define COAP_RESPONSE_200                COAP_RESPONSE_CODE(200)  /* 2.00 OK */
+#define COAP_RESPONSE_OK                 COAP_RESPONSE_200
+#define COAP_RESPONSE_201                COAP_RESPONSE_CODE(201)  /* 2.01 Created */
+#define COAP_RESPONSE_CREATED            COAP_RESPONSE_201
+#define COAP_RESPONSE_203                COAP_RESPONSE_CODE(203)  /* 2.03 Valid */
+#define COAP_RESPONSE_VALID              COAP_RESPONSE_203
+#define COAP_RESPONSE_204                COAP_RESPONSE_CODE(204)  /* 2.04 Valid */
+#define COAP_RESPONSE_CHANGED            COAP_RESPONSE_204
+#define COAP_RESPONSE_205                COAP_RESPONSE_CODE(205)  /* 2.05 Content */
+#define COAP_RESPONSE_CONTENT            COAP_RESPONSE_205
+#define COAP_RESPONSE_400                COAP_RESPONSE_CODE(400)  /* 4.00 Bad Request */
+#define COAP_RESPONSE_BAD_REQUEST        COAP_RESPONSE_400
+#define COAP_RESPONSE_404                COAP_RESPONSE_CODE(404)  /* 4.04 Not Found */
+#define COAP_RESPONSE_NOT_FOUND          COAP_RESPONSE_404
+#define COAP_RESPONSE_405                COAP_RESPONSE_CODE(405)  /* 4.05 Method Not Allowed */
+#define COAP_RESPONSE_METHOD_NOT_ALLOWED COAP_RESPONSE_405
+#define COAP_RESPONSE_415                COAP_RESPONSE_CODE(415)  /* 4.15 Unsupported Media Type */
+#define COAP_RESPONSE_UNSP_MEDIA_TYPE    COAP_RESPONSE_415
+#define COAP_RESPONSE_500                COAP_RESPONSE_CODE(500)  /* 5.00 Internal Server Error */
+#define COAP_RESPONSE_INT_SRV_ERR        COAP_RESPONSE_500
+#define COAP_RESPONSE_501                COAP_RESPONSE_CODE(501)  /* 5.01 Not Implemented */
+#define COAP_RESPONSE_NOT_IMPL           COAP_RESPONSE_501
+#define COAP_RESPONSE_503                COAP_RESPONSE_CODE(503)  /* 5.03 Service Unavailable */
+#define COAP_RESPONSE_SERVICE_UNAVAIL    COAP_RESPONSE_503
+#define COAP_RESPONSE_504                COAP_RESPONSE_CODE(504)  /* 5.04 Gateway Timeout */
+#define COAP_RESPONSE_GATEWAY_TIMEOUT    COAP_RESPONSE_504
 #if 0  /* these response codes do not have a valid code any more */
 #  define COAP_RESPONSE_X_240    240   /* Token Option required by server */
 #  define COAP_RESPONSE_X_241    241   /* Uri-Authority Option required by server */
@@ -405,4 +420,8 @@ static inline int coap_has_data(coap_pdu_t *pdu)
 {
 	return (pdu->data != NULL);
 }
+
+#ifdef ST_NODE
+coap_pdu_t *coap_pdu_from_mbuf(struct mbuf *mbuf);
+#endif
 #endif /* _PDU_H_ */

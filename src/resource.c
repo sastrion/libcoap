@@ -409,6 +409,9 @@ coap_hash_request_uri(const coap_pdu_t *request, coap_key_t key) {
 void
 coap_add_resource(coap_context_t *context, coap_resource_t *resource) {
   RESOURCES_ADD(context->resources, resource);
+  if (!resource->dynamic) {
+	  coap_hash_path(resource->uri.s, resource->uri.length, resource->key);
+  }
 }
 
 static void

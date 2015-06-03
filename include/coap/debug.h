@@ -3,7 +3,7 @@
  * Copyright (C) 2010,2011,2014 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
 #ifndef _COAP_DEBUG_H_
@@ -52,10 +52,10 @@ const char *coap_package_version(void);
  * COAP_DEBUG_FD (for @p level >= @c LOG_WARNING). The text is output only when
  * @p level is below or equal to the log level that set by coap_set_log_level().
  */
-void coap_log_impl(coap_log_t level, const char *format, ...);
+void coap_log_impl(const char *file, int line, coap_log_t level, const char *format, ...);
 
 #ifndef coap_log
-#define coap_log(...) coap_log_impl(__VA_ARGS__)
+#define coap_log(...) coap_log_impl(__FILE__, __LINE__, __VA_ARGS__)
 #endif
 
 #ifndef NDEBUG
@@ -64,6 +64,7 @@ void coap_log_impl(coap_log_t level, const char *format, ...);
 #define info(...) coap_log(LOG_INFO, __VA_ARGS__)
 #define warn(...) coap_log(LOG_WARNING, __VA_ARGS__)
 #define debug(...) coap_log(LOG_DEBUG, __VA_ARGS__)
+#define critical(...) coap_log(LOG_CRIT, __VA_ARGS__)
 
 #include "pdu.h"
 void coap_show_pdu(const coap_pdu_t *);

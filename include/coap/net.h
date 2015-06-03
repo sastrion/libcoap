@@ -145,6 +145,8 @@ typedef struct coap_context_t {
 
   ssize_t (*network_read)(coap_endpoint_t *ep, coap_packet_t **packet);
 
+  ssize_t (*network_peek)(coap_endpoint_t *ep);
+
 } coap_context_t;
 
 /**
@@ -205,10 +207,11 @@ coap_context_t *coap_new_context(void);
  */
 static inline unsigned short
 coap_new_message_id(coap_context_t *context) {
+  context->message_id += 1;
 #ifndef WITH_CONTIKI
-  return htons(++(context->message_id));
+  return htons(context->message_id);
 #else /* WITH_CONTIKI */
-  return uip_htons(++context->message_id);
+  return uip_htons(context->message_id);
 #endif
 }
 

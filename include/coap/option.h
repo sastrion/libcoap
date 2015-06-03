@@ -320,6 +320,10 @@ unsigned char *coap_opt_value(coap_opt_t *opt);
 /** @deprecated { Use coap_opt_value() instead. } */
 #define COAP_OPT_VALUE(opt) coap_opt_value((coap_opt_t *)opt)
 
+#if defined(ST_NODE)
+size_t coap_opt_encode_to_mbuf(coap_pdu_t *pdu, unsigned short type, const unsigned char *val, size_t length);
+#endif
+
 /** @} */
 
 #endif /* _OPTION_H_ */

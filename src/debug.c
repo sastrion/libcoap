@@ -3,7 +3,7 @@
  * Copyright (C) 2010--2012,2014--2015 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
 #include "coap_config.h"
@@ -49,7 +49,7 @@ const char *coap_package_version(void) {
   return PACKAGE_STRING;
 }
 
-coap_log_t 
+coap_log_t
 coap_get_log_level(void) {
   return maxlog;
 }
@@ -61,7 +61,7 @@ coap_set_log_level(coap_log_t level) {
 
 /* this array has the same order as the type log_t */
 static char *loglevels[] = {
-  "EMRG", "ALRT", "CRIT", "ERR", "WARN", "NOTE", "INFO", "DEBG" 
+  "EMRG", "ALRT", "CRIT", "ERR", "WARN", "NOTE", "INFO", "DEBG"
 };
 
 #ifdef HAVE_TIME_H
@@ -79,7 +79,7 @@ print_timestamp(char *s, size_t len, coap_tick_t t) {
 static inline size_t
 print_timestamp(char *s, size_t len, coap_tick_t t) {
 #ifdef HAVE_SNPRINTF
-  return snprintf(s, len, "%u.%03u", 
+  return snprintf(s, len, "%u.%03u",
 		  (unsigned int)coap_ticks_to_rt(t),
 		  (unsigned int)(t % COAP_TICKS_PER_SECOND));
 #else /* HAVE_SNPRINTF */
@@ -93,12 +93,12 @@ print_timestamp(char *s, size_t len, coap_tick_t t) {
 #ifndef NDEBUG
 
 #ifndef HAVE_STRNLEN
-/** 
- * A length-safe strlen() fake. 
- * 
+/**
+ * A length-safe strlen() fake.
+ *
  * @param s      The string to count characters != 0.
  * @param maxlen The maximum length of @p s.
- * 
+ *
  * @return The length of @p s.
  */
 static inline size_t
@@ -156,7 +156,7 @@ coap_print_addr(const struct coap_address_t *addr, unsigned char *buf, size_t le
   unsigned char *p = buf;
 
   switch (addr->addr.sa.sa_family) {
-  case AF_INET: 
+  case AF_INET:
     addrptr = &addr->addr.sin.sin_addr;
     port = ntohs(addr->addr.sin.sin_port);
     break;
@@ -185,7 +185,7 @@ coap_print_addr(const struct coap_address_t *addr, unsigned char *buf, size_t le
   if (addr->addr.sa.sa_family == AF_INET6) {
     if (p < buf + len) {
       *p++ = ']';
-    } else 
+    } else
       return 0;
   }
 
@@ -283,20 +283,20 @@ coap_show_pdu(const coap_pdu_t *pdu) {
     } else {
       encode = 1;
     }
-    
-    if (print_readable(COAP_OPT_VALUE(option), 
-		       COAP_OPT_LENGTH(option), 
+
+    if (print_readable(COAP_OPT_VALUE(option),
+		       COAP_OPT_LENGTH(option),
 		       buf, sizeof(buf), encode ))
       fprintf(COAP_DEBUG_FD, " %d:'%s'", opt_iter.type, buf);
   }
 
   if (have_options)
     fprintf(COAP_DEBUG_FD, " ]");
-  
+
   if (pdu->data) {
     assert(pdu->data < (unsigned char *)pdu->hdr + pdu->length);
-    print_readable(pdu->data, 
-		   (unsigned char *)pdu->hdr + pdu->length - pdu->data, 
+    print_readable(pdu->data,
+		   (unsigned char *)pdu->hdr + pdu->length - pdu->data,
 		   buf, sizeof(buf), 0 );
     fprintf(COAP_DEBUG_FD, " d:%s", buf);
   }
@@ -307,7 +307,7 @@ coap_show_pdu(const coap_pdu_t *pdu) {
 
 #endif /* NDEBUG */
 
-void 
+void
 coap_log_impl(coap_log_t level, const char *format, ...) {
   char timebuf[32];
   coap_tick_t now;
@@ -316,7 +316,7 @@ coap_log_impl(coap_log_t level, const char *format, ...) {
 
   if (maxlog < level)
     return;
-  
+
   log_fd = level <= LOG_CRIT ? COAP_ERR_FD : COAP_DEBUG_FD;
 
   coap_ticks(&now);

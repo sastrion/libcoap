@@ -49,6 +49,7 @@ coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
 #endif
   pdu->max_size = size;
   pdu->hdr->version = COAP_DEFAULT_VERSION;
+  pdu->hdr->token_length = 0;
 
   /* data is NULL unless explicitly set by coap_add_data() */
   pdu->length = sizeof(coap_hdr_t);
@@ -103,10 +104,6 @@ coap_pdu_init(unsigned char type, unsigned char code,
 #ifdef WITH_LWIP
     struct pbuf *p;
 #endif
-#ifdef ST_NODE
-    struct mbuf *m;
-#endif
-
   assert(size <= COAP_MAX_PDU_SIZE);
   /* Size must be large enough to fit the header. */
   if (size < sizeof(coap_hdr_t) || size > COAP_MAX_PDU_SIZE)
@@ -133,15 +130,18 @@ coap_pdu_init(unsigned char type, unsigned char code,
 #endif
 #ifdef ST_NODE
   pdu = coap_malloc_type(COAP_PDU, sizeof(coap_pdu_t));
-  memset(pdu, 0, sizeof(coap_pdu_t)); /* MWAS: for st-node payload is in separate memory area */
-  m = mbuf_new();
 #endif
   if (pdu) {
 #ifdef WITH_LWIP
     pdu->pbuf = p;
 #endif
 #ifdef ST_NODE
-    pdu->mbuf = m;
+    memset(pdu, 0, sizeof(coap_pdu_t)); /* MWAS: for st-node payload is in separate memory area */
+    pdu->mbuf = mbuf_new();
+    if (!pdu->mbuf) {
+    	coap_free(pdu);
+    	return NULL;
+    }
     pdu->mbuf->len = sizeof(coap_hdr_t);
     pdu->mbuf->tot_len = sizeof(coap_hdr_t);
 #endif

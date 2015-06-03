@@ -353,13 +353,6 @@ is_wkc(coap_key_t k) {
 coap_context_t *
 coap_new_context(void) {
 
-  /*
-  if (!listen_addr) {
-    coap_log(LOG_EMERG, "no listen address specified\n");
-    return NULL;
-  }
-  */
-
 #ifndef WITH_CONTIKI
   coap_context_t *c = coap_malloc_type(COAP_CONTEXT, sizeof( coap_context_t ) );
 #endif /* not WITH_CONTIKI */
@@ -426,6 +419,7 @@ coap_new_context(void) {
 #if defined(WITH_POSIX) || defined(WITH_CONTIKI) || defined(ST_NODE)
   c->network_send = coap_network_send;
   c->network_read = coap_network_read;
+  c->network_peek = coap_network_peek;
 #endif /* WITH_POSIX or WITH_CONTIKI */
 
 #ifdef WITH_CONTIKI
@@ -763,6 +757,7 @@ coap_send_confirmed(coap_context_t *context,
   }
 
   coap_insert_node(&context->sendqueue, node);
+  debug(" *** transaction %d started\n", node->id);
 
 #ifdef WITH_LWIP
   if (node == context->sendqueue) /* don't bother with timer stuff if there are earlier retransmits */
@@ -802,17 +797,20 @@ coap_retransmit(coap_context_t *context, coap_queue_t *node) {
 #endif
 
     debug("** retransmission #%d of transaction %d\n",
-	  node->retransmit_cnt, ntohs(node->pdu->hdr->id));
+	  node->retransmit_cnt, node->id);
 
     node->id = coap_send_impl(context, &node->local_if,
 			      &node->remote, node->pdu);
+
+    debug("** done (%d)\n", node->id);
+
     return node->id;
   }
 
   /* no more retransmissions, remove node from system */
 
 #ifndef WITH_CONTIKI
-  debug("** removed transaction %d\n", ntohs(node->id));
+  debug("** removed transaction %d\n", node->id);
 #endif
 
 #ifndef WITHOUT_OBSERVE
@@ -930,7 +928,7 @@ coap_handle_message(coap_context_t *ctx,
 	    (int)msg_len, addr, localaddr);
 
 	    */
-    coap_show_pdu(node->pdu);
+    //coap_show_pdu(node->pdu);
   }
 #endif
 
@@ -1010,7 +1008,7 @@ coap_cancel_all_messages(coap_context_t *context, const coap_address_t *dst,
 		     context->sendqueue->pdu->hdr->token_length)) {
     q = context->sendqueue;
     context->sendqueue = q->next;
-    debug("**** removed transaction %d\n", ntohs(q->pdu->hdr->id));
+    debug("**** removed transaction %d\n", q->id);
     coap_delete_node(q);
   }
 
@@ -1026,7 +1024,7 @@ coap_cancel_all_messages(coap_context_t *context, const coap_address_t *dst,
 	token_match(token, token_length,
 		    q->pdu->hdr->token, q->pdu->hdr->token_length)) {
       p->next = q->next;
-      debug("**** removed transaction %d\n", ntohs(q->pdu->hdr->id));
+      debug("**** removed transaction %d\n", q->id);
       coap_delete_node(q);
       q = p->next;
     } else {
@@ -1314,7 +1312,7 @@ coap_cancel(coap_context_t *context, const coap_queue_t *sent) {
 #define WANT_WKC(Pdu,Key)					\
   (((Pdu)->hdr->code == COAP_REQUEST_GET) && is_wkc(Key))
 
-static void
+__attribute__((weak)) void
 handle_request(coap_context_t *context, coap_queue_t *node) {
   coap_method_handler_t h = NULL;
   coap_pdu_t *response = NULL;
@@ -1496,7 +1494,7 @@ handle_locally(coap_context_t *context, coap_queue_t *node) {
   return 1;
 }
 
-__attribute__((weak)) void
+void
 coap_dispatch(coap_context_t *context, coap_queue_t *rcvd) {
   coap_queue_t *sent = NULL;
   coap_pdu_t *response;

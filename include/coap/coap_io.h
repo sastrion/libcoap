@@ -113,6 +113,14 @@ ssize_t coap_network_send(struct coap_context_t *context,
  */
 ssize_t coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet);
 
+/**
+ * Function interface for checking data availability.
+ *
+ * @param ep The endpoint that should be checked.
+ * @return The number of bytes present in @p ep receive queue.
+ */
+ssize_t coap_network_peek(coap_endpoint_t *ep);
+
 #ifndef coap_mcast_interface
 # define coap_mcast_interface(Local) 0
 #endif
