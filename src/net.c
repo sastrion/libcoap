@@ -19,7 +19,9 @@
 #elif HAVE_SYS_UNISTD_H
 #include <sys/unistd.h>
 #endif
+#ifdef HAVE_SYS_TYPES_H
 #include <sys/types.h>
+#endif
 #ifdef HAVE_SYS_SOCKET_H
 #include <sys/socket.h>
 #endif
@@ -28,18 +30,6 @@
 #endif
 #ifdef HAVE_ARPA_INET_H
 #include <arpa/inet.h>
-#endif
-
-#ifdef WITH_LWIP
-#include <lwip/pbuf.h>
-#include <lwip/udp.h>
-#include <lwip/timers.h>
-#endif
-
-#ifdef ST_NODE
-#include "net_common.h"
-#include "coap_io.h"
-struct mbuf *coap_packet_extract_mbuf(coap_packet_t *packet);
 #endif
 
 #include "debug.h"
@@ -119,81 +109,7 @@ struct mbuf *coap_packet_extract_mbuf(coap_packet_t *packet);
 /** creates a Qx.FRAC_BITS from COAP_DEFAULT_ACK_TIMEOUT */
 #define ACK_TIMEOUT Q(FRAC_BITS, COAP_DEFAULT_ACK_TIMEOUT)
 
-#if defined(WITH_POSIX)
-
-time_t clock_offset;
-
-static inline coap_queue_t *
-coap_malloc_node(void) {
-  return (coap_queue_t *)coap_malloc_type(COAP_NODE, sizeof(coap_queue_t));
-}
-
-static inline void
-coap_free_node(coap_queue_t *node) {
-  coap_free_type(COAP_NODE, node);
-}
-#endif /* WITH_POSIX */
-#ifdef WITH_LWIP
-
-#include <lwip/memp.h>
-
-static void coap_retransmittimer_execute(void *arg);
-static void coap_retransmittimer_restart(coap_context_t *ctx);
-
-static inline coap_queue_t *
-coap_malloc_node() {
-	return (coap_queue_t *)memp_malloc(MEMP_COAP_NODE);
-}
-
-static inline void
-coap_free_node(coap_queue_t *node) {
-	memp_free(MEMP_COAP_NODE, node);
-}
-
-#endif /* WITH_LWIP */
-#ifdef ST_NODE
-systime_t clock_offset;
-
-static inline coap_queue_t *
-coap_malloc_node(void) {
-  return (coap_queue_t *)coap_malloc_type(COAP_NODE, sizeof(coap_queue_t));
-}
-
-static inline void
-coap_free_node(coap_queue_t *node) {
-  coap_free_type(COAP_NODE, node);
-}
-#endif /* ST_NODE */
-#ifdef WITH_CONTIKI
-# ifndef DEBUG
-#  define DEBUG DEBUG_PRINT
-# endif /* DEBUG */
-
-#include "mem.h"
-#include "net/ip/uip-debug.h"
-
-clock_time_t clock_offset;
-
-#define UIP_IP_BUF   ((struct uip_ip_hdr *)&uip_buf[UIP_LLH_LEN])
-#define UIP_UDP_BUF  ((struct uip_udp_hdr *)&uip_buf[UIP_LLIPH_LEN])
-
-void coap_resources_init();
-
-unsigned char initialized = 0;
-coap_context_t the_coap_context;
-
-PROCESS(coap_retransmit_process, "message retransmit process");
-
-static inline coap_queue_t *
-coap_malloc_node() {
-  return (coap_queue_t *)coap_malloc_type(COAP_NODE, 0);
-}
-
-static inline void
-coap_free_node(coap_queue_t *node) {
-  coap_free_type(COAP_NODE, node);
-}
-#endif /* WITH_CONTIKI */
+coap_time_t clock_offset;
 
 unsigned int
 coap_adjust_basetime(coap_context_t *ctx, coap_tick_t now) {
@@ -275,7 +191,7 @@ coap_delete_node(coap_queue_t *node) {
     return 0;
 
   coap_delete_pdu(node->pdu);
-  coap_free_node(node);
+  coap_free_type(COAP_NODE, node);
 
   return 1;
 }
@@ -292,7 +208,7 @@ coap_delete_all(coap_queue_t *queue) {
 coap_queue_t *
 coap_new_node(void) {
   coap_queue_t *node;
-  node = coap_malloc_node();
+  node = (coap_queue_t *)coap_malloc_type(COAP_NODE, sizeof(coap_queue_t));
 
   if ( ! node ) {
 #ifndef NDEBUG
@@ -353,40 +269,17 @@ is_wkc(coap_key_t k) {
 coap_context_t *
 coap_new_context(void) {
 
-#ifndef WITH_CONTIKI
   coap_context_t *c = coap_malloc_type(COAP_CONTEXT, sizeof( coap_context_t ) );
-#endif /* not WITH_CONTIKI */
-#ifdef WITH_CONTIKI
-  coap_context_t *c;
-
-  if (initialized)
-    return NULL;
-#endif /* WITH_CONTIKI */
   coap_clock_init();
-#ifdef WITH_LWIP
-  prng_init(LWIP_RAND());
-#endif /* WITH_LWIP */
-#if defined(WITH_POSIX) || defined(ST_NODE)
-  prng_init(clock_offset);
-#endif /* WITH_POSIX */
 
-#ifndef WITH_CONTIKI
+  prng_init(clock_offset);
+
   if (!c) {
-#ifndef NDEBUG
     coap_log(LOG_EMERG, "coap_init: malloc:\n");
-#endif
     return NULL;
   }
-#endif /* not WITH_CONTIKI */
-#ifdef WITH_CONTIKI
-  coap_resources_init();
-  coap_memory_init();
 
-  c = &the_coap_context;
-  initialized = 1;
-#endif /* WITH_CONTIKI */
-
-  memset(c, 0, sizeof( coap_context_t ) );
+  memset(c, 0, sizeof(coap_context_t));
 
   /* initialize message id */
   prng((unsigned char *)&c->message_id, sizeof(unsigned short));
@@ -404,11 +297,6 @@ coap_new_context(void) {
   coap_register_option(c, COAP_OPTION_BLOCK2);
   coap_register_option(c, COAP_OPTION_BLOCK1);
 
- //c->endpoint = coap_new_endpoint(listen_addr, COAP_ENDPOINT_NOSEC);
-//  if (c->endpoint == NULL) {
-//    goto onerror;
-//  }
-
 #ifdef WITH_LWIP
   c->endpoint->context = c;
 #endif
@@ -416,31 +304,13 @@ coap_new_context(void) {
   c->sockfd = c->endpoint->handle.fd;
 #endif /* WITH_POSIX */
 
-#if defined(WITH_POSIX) || defined(WITH_CONTIKI) || defined(ST_NODE)
+//#if defined(WITH_POSIX) || defined(WITH_CONTIKI) || defined(ST_NODE)
   c->network_send = coap_network_send;
   c->network_read = coap_network_read;
   c->network_peek = coap_network_peek;
-#endif /* WITH_POSIX or WITH_CONTIKI */
-
-#ifdef WITH_CONTIKI
-  process_start(&coap_retransmit_process, (char *)c);
-
-  PROCESS_CONTEXT_BEGIN(&coap_retransmit_process);
-#ifndef WITHOUT_OBSERVE
-  etimer_set(&c->notify_timer, COAP_RESOURCE_CHECK_TIME * COAP_TICKS_PER_SECOND);
-#endif /* WITHOUT_OBSERVE */
-  /* the retransmit timer must be initialized to some large value */
-  etimer_set(&the_coap_context.retransmit_timer, 0xFFFF);
-  PROCESS_CONTEXT_END(&coap_retransmit_process);
-#endif /* WITH_CONTIKI */
+//#endif /* WITH_POSIX or WITH_CONTIKI */
 
   return c;
-
-// onerror:
-  if (c) {
-   coap_free(c);
-  }
-  return NULL;
 }
 
 void
@@ -459,13 +329,7 @@ coap_free_context(coap_context_t *context) {
   //coap_delete_all_resources(context);
   //coap_free_endpoint(context->endpoint);
 
-#ifndef WITH_CONTIKI
   coap_free_type(COAP_CONTEXT, context);
-#endif/* not WITH_CONTIKI */
-#ifdef WITH_CONTIKI
-  memset(&the_coap_context, 0, sizeof(coap_context_t));
-  initialized = 0;
-#endif /* WITH_CONTIKI */
 }
 
 int
@@ -585,37 +449,6 @@ coap_send_impl(coap_context_t *context,
   return id;
 }
 #endif /* WITH_POSIX */
-#ifdef WITH_LWIP
-coap_tid_t
-coap_send_impl(coap_context_t *context,
-	       const coap_endpoint_t *local_interface,
-	       const coap_address_t *dst,
-	       coap_pdu_t *pdu) {
-  coap_tid_t id = COAP_INVALID_TID;
-  uint8_t err;
-  char *data_backup;
-
-  if ( !context || !dst || !pdu )
-  {
-    return id;
-  }
-
-  data_backup = pdu->data;
-
-  /* FIXME: we can't check this here with the existing infrastructure, but we
-   * should actually check that the pdu is not held by anyone but us. the
-   * respective pbuf is already exclusively owned by the pdu. */
-
-  pbuf_realloc(pdu->pbuf, pdu->length);
-
-  coap_transaction_id(dst, pdu, &id);
-
-  udp_sendto(context->endpoint->pcb, pdu->pbuf,
-			&dst->addr, dst->port);
-
-  return id;
-}
-#endif /* WITH_LWIP */
 
 coap_tid_t coap_send_impl(coap_context_t *context,
 	       const coap_endpoint_t *local_interface,
@@ -726,7 +559,7 @@ coap_send_confirmed(coap_context_t *context,
   node->id = coap_send_impl(context, local_interface, dst, pdu);
   if (COAP_INVALID_TID == node->id) {
     debug("coap_send_confirmed: error sending pdu\n");
-    coap_free_node(node);
+    coap_free_type(COAP_NODE, node);
     return COAP_INVALID_TID;
   }
 
@@ -839,17 +672,13 @@ coap_read(coap_context_t *ctx, coap_endpoint_t *endpoint) {
   coap_packet_t *packet;
   int result = -1;		/* the value to be returned */
 
-#if defined(WITH_POSIX) || defined(WITH_CONTIKI) || defined(ST_NODE)
   bytes_read = ctx->network_read(endpoint, &packet);
-#endif /* WITH_POSIX or WITH_CONTIKI */
 
   if ( bytes_read < 0 ) {
     //warn("coap_read: recvfrom");
   } else {
-#if defined(WITH_POSIX) || defined(WITH_CONTIKI) || defined(ST_NODE)
     result = coap_handle_message(ctx, packet);
     coap_free_packet(packet);
-#endif /* WITH_POSIX or WITH_CONTIKI */
   }
 
   return result;
@@ -1602,132 +1431,3 @@ int
 coap_can_exit( coap_context_t *context ) {
   return !context || (context->sendqueue == NULL);
 }
-
-#ifdef WITH_CONTIKI
-
-/*---------------------------------------------------------------------------*/
-/* CoAP message retransmission */
-/*---------------------------------------------------------------------------*/
-PROCESS_THREAD(coap_retransmit_process, ev, data)
-{
-  coap_tick_t now;
-  coap_queue_t *nextpdu;
-
-  PROCESS_BEGIN();
-
-  debug("Started retransmit process\r\n");
-
-  while(1) {
-    PROCESS_YIELD();
-    if (ev == PROCESS_EVENT_TIMER) {
-      if (etimer_expired(&the_coap_context.retransmit_timer)) {
-
-	nextpdu = coap_peek_next(&the_coap_context);
-
-	coap_ticks(&now);
-	while (nextpdu && nextpdu->t <= now) {
-	  coap_retransmit(&the_coap_context, coap_pop_next(&the_coap_context));
-	  nextpdu = coap_peek_next(&the_coap_context);
-	}
-
-	/* need to set timer to some value even if no nextpdu is available */
-	etimer_set(&the_coap_context.retransmit_timer,
-		   nextpdu ? nextpdu->t - now : 0xFFFF);
-      }
-#ifndef WITHOUT_OBSERVE
-      if (etimer_expired(&the_coap_context.notify_timer)) {
-	coap_check_notify(&the_coap_context);
-	etimer_reset(&the_coap_context.notify_timer);
-      }
-#endif /* WITHOUT_OBSERVE */
-    }
-  }
-
-  PROCESS_END();
-}
-/*---------------------------------------------------------------------------*/
-
-#endif /* WITH_CONTIKI */
-
-#ifdef WITH_LWIP
-/* FIXME: retransmits that are not required any more due to incoming packages
- * do *not* get cleared at the moment, the wakeup when the transmission is due
- * is silently accepted. this is mainly due to the fact that the required
- * checks are similar in two places in the code (when receiving ACK and RST)
- * and that they cause more than one patch chunk, as it must be first checked
- * whether the sendqueue item to be dropped is the next one pending, and later
- * the restart function has to be called. nothing insurmountable, but it can
- * also be implemented when things have stabilized, and the performance
- * penality is minimal
- *
- * also, this completely ignores COAP_RESOURCE_CHECK_TIME.
- * */
-
-static void coap_retransmittimer_execute(void *arg)
-{
-	coap_context_t *ctx = (coap_context_t*)arg;
-	coap_tick_t now;
-	coap_tick_t elapsed;
-	coap_queue_t *nextinqueue;
-
-	ctx->timer_configured = 0;
-
-	coap_ticks(&now);
-
-	elapsed = now - ctx->sendqueue_basetime; /* that's positive for sure, and unless we haven't been called for a complete wrapping cycle, did not wrap */
-
-	nextinqueue = coap_peek_next(ctx);
-	while (nextinqueue != NULL)
-	{
-		if (nextinqueue->t > elapsed) {
-			nextinqueue->t -= elapsed;
-			break;
-		} else {
-			elapsed -= nextinqueue->t;
-			coap_retransmit(ctx, coap_pop_next(ctx));
-			nextinqueue = coap_peek_next(ctx);
-		}
-	}
-
-	ctx->sendqueue_basetime = now;
-
-	coap_retransmittimer_restart(ctx);
-}
-
-static void coap_retransmittimer_restart(coap_context_t *ctx)
-{
-	coap_tick_t now, elapsed, delay;
-
-	if (ctx->timer_configured)
-	{
-		printf("clearing\n");
-		sys_untimeout(coap_retransmittimer_execute, (void*)ctx);
-		ctx->timer_configured = 0;
-	}
-	if (ctx->sendqueue != NULL)
-	{
-		coap_ticks(&now);
-		elapsed = now - ctx->sendqueue_basetime;
-		if (ctx->sendqueue->t >= elapsed) {
-			delay = ctx->sendqueue->t - elapsed;
-		} else {
-			/* a strange situation, but not completely impossible.
-			 *
-			 * this happens, for example, right after
-			 * coap_retransmittimer_execute, when a retransmission
-			 * was *just not yet* due, and the clock ticked before
-			 * our coap_ticks was called.
-			 *
-			 * not trying to retransmit anything now, as it might
-			 * cause uncontrollable recursion; let's just try again
-			 * with the next main loop run.
-			 * */
-			delay = 0;
-		}
-
-		printf("scheduling for %d ticks\n", delay);
-		sys_timeout(delay, coap_retransmittimer_execute, (void*)ctx);
-		ctx->timer_configured = 1;
-	}
-}
-#endif

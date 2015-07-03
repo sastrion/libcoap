@@ -21,9 +21,9 @@
  * @{
  */
 
-#ifndef WITH_CONTIKI
 #include <stdlib.h>
 
+#ifndef prng
 /**
  * Fills \p buf with \p len random bytes. This is the default implementation for
  * prng(). You might want to change prng() to use a better PRNG on your specific
@@ -35,33 +35,6 @@ coap_prng_impl(unsigned char *buf, size_t len) {
     *buf++ = rand() & 0xFF;
   return 1;
 }
-#else /* WITH_CONTIKI */
-#include <string.h>
-
-/**
- * Fills \p buf with \p len random bytes. This is the default implementation for
- * prng(). You might want to change prng() to use a better PRNG on your specific
- * platform.
- */
-static inline int
-contiki_prng_impl(unsigned char *buf, size_t len) {
-  unsigned short v = random_rand();
-  while (len > sizeof(v)) {
-    memcpy(buf, &v, sizeof(v));
-    len -= sizeof(v);
-    buf += sizeof(v);
-    v = random_rand();
-  }
-
-  memcpy(buf, &v, len);
-  return 1;
-}
-
-#define prng(Buf,Length) contiki_prng_impl((Buf), (Length))
-#define prng_init(Value) random_init((unsigned short)(Value))
-#endif /* WITH_CONTIKI */
-
-#ifndef prng
 /**
  * Fills \p Buf with \p Length bytes of random data.
  *

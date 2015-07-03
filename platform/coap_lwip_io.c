@@ -4,12 +4,13 @@
  *               2014 chrysn <chrysn@fsfe.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
-#include "coap_config.h"
 #include "mem.h"
+#include "coap_config.h"
 #include "coap_io.h"
+#include "coap_lwip_io.h"
 
 void coap_packet_populate_endpoint(coap_packet_t *packet, coap_endpoint_t *target)
 {
@@ -40,6 +41,35 @@ struct pbuf *coap_packet_extract_pbuf(coap_packet_t *packet)
 	return ret;
 }
 
+coap_tid_t
+coap_send_impl(coap_context_t *context,
+           const coap_endpoint_t *local_interface,
+           const coap_address_t *dst,
+           coap_pdu_t *pdu) {
+  coap_tid_t id = COAP_INVALID_TID;
+  uint8_t err;
+  char *data_backup;
+
+  if ( !context || !dst || !pdu )
+  {
+    return id;
+  }
+
+  data_backup = pdu->data;
+
+  /* FIXME: we can't check this here with the existing infrastructure, but we
+   * should actually check that the pdu is not held by anyone but us. the
+   * respective pbuf is already exclusively owned by the pdu. */
+
+  pbuf_realloc(pdu->pbuf, pdu->length);
+
+  coap_transaction_id(dst, pdu, &id);
+
+  udp_sendto(context->endpoint->pcb, pdu->pbuf,
+            &dst->addr, dst->port);
+
+  return id;
+}
 
 /** Callback from lwIP when a package was received.
  *

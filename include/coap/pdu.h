@@ -18,10 +18,6 @@
 #include "uri.h"
 #include <stdint.h>
 
-#ifdef WITH_LWIP
-#include <lwip/pbuf.h>
-#endif
-
 /* pre-defined constants that reflect defaults for CoAP */
 
 #ifndef COAP_DEFAULT_RESPONSE_TIMEOUT
@@ -254,19 +250,8 @@ typedef struct {
   unsigned short length;    /**< PDU length (including header, options, data) */
   unsigned char *data;      /**< payload */
 
-#ifdef WITH_LWIP
-  struct pbuf *pbuf;        /**< lwIP PBUF. The package data will always reside
-                             *    inside the pbuf's payload, but this pointer
-                             *    has to be kept because no exact offset can be
-                             *    given. This field must not be accessed from
-                             *    outside, because the pbuf's reference count
-                             *    is checked to be 1 when the pbuf is assigned
-                             *    to the pdu, and the pbuf stays exclusive to
-                             *    this pdu. */
-#endif
-#ifdef ST_NODE
-  unsigned short payload_offset;	/**< payload offset */
-  struct mbuf *mbuf;        /**< mbuf */
+#ifdef CUSTOM_PDU_FIELDS
+  CUSTOM_PDU_FIELDS
 #endif
 } coap_pdu_t;
 
@@ -278,25 +263,6 @@ typedef struct {
 #define COAP_PDU_CODE(pdu) ((pdu)->hdr->code)
 #define COAP_PDU_TYPE(pdu) ((pdu)->hdr->type)
 #define COAP_PDU_ID(pdu)   ((pdu)->hdr->id)
-
-#ifdef WITH_LWIP
-/**
- * Creates a CoAP PDU from an lwIP @p pbuf, whose reference is passed on to this
- * function.
- *
- * The pbuf is checked for being contiguous, and for having only one reference.
- * The reference is stored in the PDU and will be freed when the PDU is freed.
- *
- * (For now, these are fatal errors; in future, a new pbuf might be allocated,
- * the data copied and the passed pbuf freed).
- *
- * This behaves like coap_pdu_init(0, 0, 0, pbuf->tot_len), and afterwards
- * copying the contents of the pbuf to the pdu.
- *
- * @return A pointer to the new PDU object or @c NULL on error.
- */
-coap_pdu_t * coap_pdu_from_pbuf(struct pbuf *pbuf);
-#endif
 
 /**
  * Creates a new CoAP PDU of given @p size (must be large enough to hold the
@@ -421,7 +387,4 @@ static inline int coap_has_data(coap_pdu_t *pdu)
 	return (pdu->data != NULL);
 }
 
-#ifdef ST_NODE
-coap_pdu_t *coap_pdu_from_mbuf(struct mbuf *mbuf);
-#endif
 #endif /* _PDU_H_ */

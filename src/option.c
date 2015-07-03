@@ -410,6 +410,7 @@ coap_opt_encode(coap_opt_t *opt, size_t maxlen, unsigned short delta,
   return l + length;
 }
 
+#if defined(ST_NODE)
 size_t
 coap_opt_setheader_to_mbuf(coap_pdu_t *pdu, unsigned short type, size_t length) {
   size_t skip = 0;
@@ -466,8 +467,6 @@ coap_opt_setheader_to_mbuf(coap_pdu_t *pdu, unsigned short type, size_t length) 
   return skip + 1;
 }
 
-
-
 size_t
 coap_opt_encode_to_mbuf(coap_pdu_t *pdu, unsigned short type,
 		const unsigned char *val, size_t length) {
@@ -495,3 +494,5 @@ coap_opt_encode_to_mbuf(coap_pdu_t *pdu, unsigned short type,
 
   return l + length;
 }
+
+#endif

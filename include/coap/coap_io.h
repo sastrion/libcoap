@@ -26,55 +26,21 @@
 
 #include "address.h"
 
-#ifdef WITH_LWIP
-# include <lwip/udp.h>
-#endif
+/** Invalid interface handle */
+#define COAP_IF_INVALID -1
 
-#ifdef ST_NODE
-#include <stdio.h>
-#include "net_common.h"
-#endif
+#define COAP_ENDPOINT_NOSEC 0x00
+#define COAP_ENDPOINT_DTLS  0x01
+
+struct coap_context_t;
+struct coap_packet_t;
 
 /**
  * Abstract handle that is used to identify a local network interface.
  */
 typedef int coap_if_handle_t;
 
-/** Invalid interface handle */
-#define COAP_IF_INVALID -1
-
-struct coap_packet_t;
 typedef struct coap_packet_t coap_packet_t;
-
-struct coap_context_t;
-
-/**
- * Abstraction of virtual endpoint that can be attached to coap_context_t. The
- * tuple (handle, addr) must uniquely identify this endpoint.
- */
-typedef struct coap_endpoint_t {
-#if defined(WITH_POSIX) || defined(WITH_CONTIKI)
-  union {
-    int fd;       /**< on POSIX systems */
-    void *conn;   /**< opaque connection (e.g. uip_conn in Contiki) */
-  } handle;       /**< opaque handle to identify this endpoint */
-#endif /* WITH_POSIX or WITH_CONTIKI */
-
-#ifdef WITH_LWIP
-  struct udp_pcb *pcb;
- /**< @FIXME this was added in a hurry, not sure it confirms to the overall model --chrysn */
-  struct coap_context_t *context;
-#endif /* WITH_LWIP */
-#ifdef ST_NODE
-  net_socket_t *ns;
-#endif
-  coap_address_t addr; /**< local interface address */
-  int ifindex;
-  int flags;
-} coap_endpoint_t;
-
-#define COAP_ENDPOINT_NOSEC 0x00
-#define COAP_ENDPOINT_DTLS  0x01
 
 coap_endpoint_t *coap_new_endpoint(const coap_address_t *addr, int flags);
 
@@ -154,55 +120,5 @@ void coap_packet_copy_source(coap_packet_t *packet, coap_address_t *target);
 void coap_packet_get_memmapped(coap_packet_t *packet,
                                unsigned char **address,
                                size_t *length);
-
-#ifdef WITH_LWIP
-/**
- * Get the pbuf of a packet. The caller takes over responsibility for freeing
- * the pbuf.
- */
-struct pbuf *coap_packet_extract_pbuf(coap_packet_t *packet);
-#endif
-
-#ifdef WITH_CONTIKI
-/*
- * This is only included in coap_io.h instead of .c in order to be available for
- * sizeof in mem.c.
- */
-struct coap_packet_t {
-  coap_if_handle_t hnd;         /**< the interface handle */
-  coap_address_t src;           /**< the packet's source address */
-  coap_address_t dst;           /**< the packet's destination address */
-  const coap_endpoint_t *interface;
-  int ifindex;
-  void *session;                /**< opaque session data */
-  size_t length;                /**< length of payload */
-  unsigned char payload[];      /**< payload */
-};
-#endif
-
-#ifdef WITH_LWIP
-/*
- * This is only included in coap_io.h instead of .c in order to be available for
- * sizeof in lwippools.h.
- * Simple carry-over of the incoming pbuf that is later turned into a node.
- *
- * Source address data is currently side-banded via ip_current_dest_addr & co
- * as the packets have limited lifetime anyway.
- */
-struct coap_packet_t {
-  struct pbuf *pbuf;
-  const coap_endpoint_t *local_interface;
-  uint16_t srcport;
-};
-#endif
-
-#ifdef ST_NODE
-struct coap_packet_t {
-	struct mbuf *mbuf;
-	const coap_endpoint_t *interface;
-	coap_address_t src;  /**< the packet's source address */
-    coap_address_t dst;	 /**< the packet's destination address */
-};
-#endif
 
 #endif /* _COAP_IO_H_ */

@@ -30,126 +30,49 @@
 #include "mbuf.h"
 #endif
 
+#ifndef WITH_CUSTOM_PDU_HANDLING
+
 void
 coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
   assert(pdu);
 
-#if defined(WITH_LWIP)
-  /* the pdu itself is not wiped as opposed to the other implementations,
-   * because we have to rely on the pbuf to be set there. */
-  pdu->hdr = pdu->pbuf->payload;
-#else
   pdu->max_delta = 0;
-  pdu->data = NULL;
-#endif
-#if defined(ST_NODE)
-  pdu->hdr = pdu->mbuf->payload;
-#else
-  memset(pdu->hdr, 0, size);
-#endif
   pdu->max_size = size;
+  pdu->length = sizeof(coap_hdr_t);
+  /* data is NULL unless explicitly set by coap_add_data() */
+  pdu->data = NULL;
+
+  memset(pdu->hdr, 0, size);
   pdu->hdr->version = COAP_DEFAULT_VERSION;
   pdu->hdr->token_length = 0;
-
-  /* data is NULL unless explicitly set by coap_add_data() */
-  pdu->length = sizeof(coap_hdr_t);
 }
-
-#ifdef WITH_LWIP
-coap_pdu_t *
-coap_pdu_from_pbuf(struct pbuf *pbuf)
-{
-  if (pbuf == NULL) return NULL;
-
-  LWIP_ASSERT("Can only deal with contiguous PBUFs", pbuf->tot_len == pbuf->len);
-  LWIP_ASSERT("coap_read needs to receive an exclusive copy of the incoming pbuf", pbuf->ref == 1);
-
-  coap_pdu_t *result = coap_malloc_type(COAP_PDU, sizeof(coap_pdu_t));
-  if (!result) {
-	  pbuf_free(pbuf);
-	  return NULL;
-  }
-
-  memset(result, 0, sizeof(coap_pdu_t));
-
-  result->max_size = pbuf->tot_len;
-  result->length = pbuf->tot_len;
-  result->hdr = pbuf->payload;
-  result->pbuf = pbuf;
-
-  return result;
-}
-#endif
-#ifdef ST_NODE
-coap_pdu_t *
-coap_pdu_from_mbuf(struct mbuf *mbuf)
-{
-  coap_pdu_t *result = coap_malloc_type(COAP_PDU, sizeof(coap_pdu_t));
-
-  memset(result, 0, sizeof(coap_pdu_t));
-
-  result->max_size = mbuf->tot_len;
-  result->length = mbuf->tot_len;
-  result->hdr = (coap_hdr_t *)((unsigned char *)mbuf->payload);
-  result->mbuf = mbuf;
-
-  return result;
-}
-#endif
 
 coap_pdu_t *
 coap_pdu_init(unsigned char type, unsigned char code,
 	      unsigned short id, size_t size) {
   coap_pdu_t *pdu;
-#ifdef WITH_LWIP
-    struct pbuf *p;
-#endif
+
   assert(size <= COAP_MAX_PDU_SIZE);
   /* Size must be large enough to fit the header. */
   if (size < sizeof(coap_hdr_t) || size > COAP_MAX_PDU_SIZE)
     return NULL;
 
   /* size must be large enough for hdr */
-#ifdef WITH_POSIX
-  pdu = coap_malloc(sizeof(coap_pdu_t) + size);
-#endif
-#ifdef WITH_CONTIKI
-  pdu = (coap_pdu_t *)memb_alloc(&pdu_storage);
-#endif
-#ifdef WITH_LWIP
-  p = pbuf_alloc(PBUF_TRANSPORT, size, PBUF_RAM);
-  if (p != NULL) {
-    u8_t header_error = pbuf_header(p, sizeof(coap_pdu_t));
-    /* we could catch that case and allocate larger memory in advance, but then
-     * again, we'd run into greater trouble with incoming packages anyway */
-    LWIP_ASSERT("CoAP PDU header does not fit in transport header", header_error == 0);
-    pdu = p->payload;
-  } else {
-    pdu = NULL;
-  }
-#endif
-#ifdef ST_NODE
   pdu = coap_malloc_type(COAP_PDU, sizeof(coap_pdu_t));
-#endif
-  if (pdu) {
-#ifdef WITH_LWIP
-    pdu->pbuf = p;
-#endif
-#ifdef ST_NODE
-    memset(pdu, 0, sizeof(coap_pdu_t)); /* MWAS: for st-node payload is in separate memory area */
-    pdu->mbuf = mbuf_new();
-    if (!pdu->mbuf) {
-    	coap_free(pdu);
-    	return NULL;
-    }
-    pdu->mbuf->len = sizeof(coap_hdr_t);
-    pdu->mbuf->tot_len = sizeof(coap_hdr_t);
-#endif
-    coap_pdu_clear(pdu, size);
-    pdu->hdr->id = id;
-    pdu->hdr->type = type;
-    pdu->hdr->code = code;
+  if (!pdu)
+    return NULL;
+
+  pdu->hdr = coap_malloc_type(COAP_PDU_BUF, size);
+  if (!pdu->hdr) {
+    coap_free_type(COAP_PDU, pdu);
+    return NULL;
   }
+
+  coap_pdu_clear(pdu, size);
+  pdu->hdr->id = id;
+  pdu->hdr->type = type;
+  pdu->hdr->code = code;
+
   return pdu;
 }
 
@@ -157,11 +80,7 @@ coap_pdu_t *
 coap_new_pdu(void) {
   coap_pdu_t *pdu;
 
-#ifndef WITH_CONTIKI
   pdu = coap_pdu_init(0, 0, ntohs(COAP_INVALID_TID), COAP_MAX_PDU_SIZE);
-#else /* WITH_CONTIKI */
-  pdu = coap_pdu_init(0, 0, uip_ntohs(COAP_INVALID_TID), COAP_MAX_PDU_SIZE);
-#endif /* WITH_CONTIKI */
 
 #ifndef NDEBUG
   if (!pdu)
@@ -172,30 +91,15 @@ coap_new_pdu(void) {
 
 void
 coap_delete_pdu(coap_pdu_t *pdu) {
-#if defined(WITH_POSIX) || defined(WITH_CONTIKI)
   if (pdu != NULL) {
     if (pdu->hdr != NULL) {
       coap_free_type(COAP_PDU_BUF, pdu->hdr);
     }
     coap_free_type(COAP_PDU, pdu);
   }
-#endif
-#ifdef WITH_LWIP
-  if (pdu != NULL) /* accepting double free as the other implementation accept that too */
-    pbuf_free(pdu->pbuf);
-#endif
-#ifdef WITH_CONTIKI
-  memb_free(&pdu_storage, pdu);
-#endif
-#ifdef ST_NODE
-  if (pdu != NULL) {
-	if (pdu->mbuf != NULL) {
-		mbuf_free(pdu->mbuf);
-	}
-    coap_free_type(COAP_PDU, pdu);
-  }
-#endif
 }
+
+#endif /* WITH_CUSTOM_PDU_HANDLING */
 
 int
 coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
