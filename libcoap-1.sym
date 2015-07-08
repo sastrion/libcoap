@@ -12,6 +12,7 @@ coap_cancel_all_messages
 coap_can_exit
 coap_check_notify
 coap_check_option
+coap_clock_init
 coap_clone_uri
 coap_decode_var_bytes
 coap_delete_all
@@ -60,6 +61,9 @@ coap_opt_block_num
 coap_opt_delta
 coap_opt_encode
 coap_option_check_critical
+coap_option_filter_get
+coap_option_filter_set
+coap_option_filter_unset
 coap_option_iterator_init
 coap_option_next
 coap_opt_length
@@ -100,6 +104,7 @@ coap_split_uri
 coap_subscription_init
 coap_ticks
 coap_ticks
+coap_ticks_to_rt
 coap_touch_observer
 coap_transaction_id
 coap_wellknown_response

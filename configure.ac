@@ -88,7 +88,7 @@ AC_SUBST(LT_LIBCOAP_AGE)
 AC_SUBST(LIBCOAP_SO_VERSION)
 
 # Defining the API Version
-LIBCOAP_API_VERSION=1.0
+LIBCOAP_API_VERSION=1
 AC_SUBST(LIBCOAP_API_VERSION)
 
 # Adding some default warning options for code QS
@@ -236,6 +236,12 @@ AC_ARG_ENABLE([examples],
               [build_examples="yes"])
 
 if test "x$build_examples" = "xyes"; then
+	AC_ARG_VAR([A2X], [a2x command])
+	AC_PATH_PROG([A2X], [a2x])
+	if test "x$A2X" = "x"; then
+		AC_MSG_WARN([==> You want to build the examples binaries, that is also including the respective manpages but a2x was not found!])
+		AC_MSG_ERROR([==> Install the package that contains the a2x binary or disable the build of the examples using --disable-examples.])
+	fi
 	BUILD_EXAMPLES="YES"
 fi
 AM_CONDITIONAL(BUILD_EXAMPLES, [test "x$build_examples" != "x"])
@@ -336,6 +342,10 @@ AC_CONFIG_FILES([
 Makefile
 doc/Makefile
 examples/Makefile
+examples/coap-client.txt
+examples/coap-server.txt
+examples/coap-rd.txt
+include/coap/coap.h
 tests/Makefile
 libcoap-$LIBCOAP_API_VERSION.pc:libcoap-$LIBCOAP_API_VERSION.pc.in
 ])
@@ -368,4 +378,5 @@ else
 fi
 if test "x$build_examples" = "xyes"; then
 	AC_MSG_RESULT([      build examples          : "yes"])
+	AC_MSG_RESULT([             -->  a2x around  : "yes" ($A2X)])
 fi

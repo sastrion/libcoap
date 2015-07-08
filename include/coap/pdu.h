@@ -94,7 +94,11 @@
 #define COAP_OPTION_BLOCK2         23 /* C, uint, 0--3 B, (none) */
 #define COAP_OPTION_BLOCK1         27 /* C, uint, 0--3 B, (none) */
 
-#define COAP_MAX_OPT               63 /**< the highest option number we know */
+/* selected option types from draft-tcs-coap-no-response-option-11 */
+
+#define COAP_OPTION_NORESPONSE    284 /* N, uint, 0--1 B, 0 */
+
+#define COAP_MAX_OPT            65535 /**< the highest option number we know */
 
 /* CoAP result codes (HTTP-Code / 100 * 40 + HTTP-Code % 100) */
 
@@ -182,10 +186,21 @@ char *coap_response_phrase(unsigned char code);
  * use an unallocated type here and hope for the best. */
 #define COAP_MEDIATYPE_ANY                         0xff /* any media type */
 
-/* CoAP transaction id */
-/*typedef unsigned short coap_tid_t; */
+/**
+ * coap_tid_t is used to store CoAP transaction id, i.e. a hash value
+ * built from the remote transport address and the message id of a
+ * CoAP PDU.  Valid transaction ids are greater or equal zero.
+ */
 typedef int coap_tid_t;
+
+/** Indicates an invalid transaction id. */
 #define COAP_INVALID_TID -1
+
+/**
+ * Indicates that a response is suppressed. This will occur for error
+ * responses if the request was received via IP multicast.
+ */
+#define COAP_DROPPED_RESPONSE -2
 
 #ifdef WORDS_BIGENDIAN
 typedef struct {

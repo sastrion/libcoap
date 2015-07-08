@@ -22,6 +22,7 @@
 #endif
 
 #include "option.h"
+#include "encode.h"		/* for coap_fls() */
 #include "debug.h"
 
 coap_opt_t *
@@ -209,7 +210,7 @@ coap_option_next(coap_opt_iterator_t *oi) {
 }
 
 coap_opt_t *
-coap_check_option(coap_pdu_t *pdu, unsigned char type,
+coap_check_option(coap_pdu_t *pdu, unsigned short type, 
 		  coap_opt_iterator_t *oi) {
   coap_opt_filter_t f;
 
@@ -410,89 +411,117 @@ coap_opt_encode(coap_opt_t *opt, size_t maxlen, unsigned short delta,
   return l + length;
 }
 
-#if defined(ST_NODE)
-size_t
-coap_opt_setheader_to_mbuf(coap_pdu_t *pdu, unsigned short type, size_t length) {
-  size_t skip = 0;
-  unsigned short delta = type - pdu->max_delta;
-  unsigned short maxlen = pdu->max_size - pdu->length;
-  unsigned char opt[5];
+/* coap_opt_filter_t has the following internal structure: */
+typedef struct {
+  uint16_t mask;
 
-  if (maxlen == 0)
+#define LONG_MASK ((1 << COAP_OPT_FILTER_LONG) - 1)
+#define SHORT_MASK \
+  (~LONG_MASK & ((1 << (COAP_OPT_FILTER_LONG + COAP_OPT_FILTER_SHORT)) - 1))
+
+  uint16_t long_opts[COAP_OPT_FILTER_LONG];
+  uint8_t short_opts[COAP_OPT_FILTER_SHORT];
+} opt_filter;
+
+/** Returns true iff @p type denotes an option type larger than 255. */
+static inline int
+is_long_option(unsigned short type) { return type > 255; }
+
+/** Operation specifiers for coap_filter_op(). */
+enum filter_op_t { FILTER_SET, FILTER_CLEAR, FILTER_GET };
+
+/**
+ * Applies @p op on @p filter with respect to @p type. The following
+ * operations are defined:
+ *
+ * FILTER_SET: Store @p type into an empty slot in @p filter. Returns
+ * @c 1 on success, or @c 0 if no spare slot was available.
+ *
+ * FILTER_CLEAR: Remove @p type from filter if it exists.
+ *
+ * FILTER_GET: Search for @p type in @p filter. Returns @c 1 if found,
+ * or @c 0 if not found.
+ *
+ * @param filter The filter object.
+ * @param type   The option type to set, get or clear in @p filter.
+ * @param op     The operation to apply to @p filter and @p type.
+ *
+ * @return 1 on success, and 0 when FILTER_GET yields no
+ * hit or no free slot is available to store @p type with FILTER_SET.
+ */
+static int
+coap_option_filter_op(coap_opt_filter_t filter,
+		      unsigned short type,
+		      enum filter_op_t op) {
+  size_t index = 0;
+  opt_filter *of = (opt_filter *)filter;
+  uint16_t nr, mask = 0;
+
+  if (is_long_option(type)) {
+    mask = LONG_MASK;
+
+    for (nr = 1; index < COAP_OPT_FILTER_LONG; nr <<= 1, index++) {
+
+      if (((of->mask & nr) > 0) && (of->long_opts[index] == type)) {
+	if (op == FILTER_CLEAR) {
+	  of->mask &= ~nr;
+	}
+
+	return 1;
+      }
+    }
+  } else {
+    mask = SHORT_MASK;
+
+    for (nr = 1 << COAP_OPT_FILTER_LONG; index < COAP_OPT_FILTER_SHORT;
+	 nr <<= 1, index++) {
+
+      if (((of->mask & nr) > 0) && (of->short_opts[index] == (type & 0xff))) {
+	if (op == FILTER_CLEAR) {
+	  of->mask &= ~nr;
+	}
+
+	return 1;
+      }
+    }
+  }
+
+  /* type was not found, so there is nothing to do if op is CLEAR or GET */
+  if ((op == FILTER_CLEAR) || (op == FILTER_GET)) {
     return 0;
-
-  if (delta < 13) {
-    opt[0] = delta << 4;
-  } else if (delta < 270) {
-    if (maxlen < 2) {
-      debug("insufficient space to encode option delta %d", delta);
-      return 0;
-    }
-
-    opt[0] = 0xd0;
-    opt[++skip] = delta - 13;
-  } else {
-    if (maxlen < 3) {
-      debug("insufficient space to encode option delta %d", delta);
-      return 0;
-    }
-
-    opt[0] = 0xe0;
-    opt[++skip] = ((delta - 269) >> 8) & 0xff;
-    opt[++skip] = (delta - 269) & 0xff;
   }
 
-  if (length < 13) {
-    opt[0] |= length & 0x0f;
-  } else if (length < 270) {
-    if (maxlen < skip + 1) {
-      debug("insufficient space to encode option length %d", length);
-      return 0;
-    }
+  /* handle FILTER_SET: */
 
-    opt[0] |= 0x0d;
-    opt[++skip] = length - 13;
-  } else {
-    if (maxlen < skip + 2) {
-      debug("insufficient space to encode option delta %d", delta);
-      return 0;
-    }
-
-    opt[0] |= 0x0e;
-    opt[++skip] = ((length - 269) >> 8) & 0xff;
-    opt[++skip] = (length - 269) & 0xff;
+  index = coap_fls(~of->mask & mask);
+  if (!index) {
+    return 0;
   }
 
-  mbuf_write(pdu->mbuf, &opt, skip+1, pdu->length);
-  return skip + 1;
+  if (is_long_option(type)) {
+    of->long_opts[index - 1] = type;
+  } else {
+    of->short_opts[index - COAP_OPT_FILTER_LONG - 1] = type;
+  }
+
+  of->mask |= 1 << (index - 1);
+
+  return 1;
 }
 
-size_t
-coap_opt_encode_to_mbuf(coap_pdu_t *pdu, unsigned short type,
-		const unsigned char *val, size_t length) {
-  size_t l = 1;
-  unsigned short maxlen = pdu->max_size - pdu->length;
-
-  l = coap_opt_setheader_to_mbuf(pdu, type, length);
-  assert(l <= maxlen);
-
-  if (!l) {
-    debug("coap_opt_encode: cannot set option header\n");
-    return 0;
-  }
-
-  maxlen -= l;
-
-  if (maxlen < length) {
-    debug("coap_opt_encode: option too large for buffer\n");
-    return 0;
-  }
-
-  if (val) {
-	  mbuf_write(pdu->mbuf, val, length, pdu->length+l);
-  }
-
-  return l + length;
+int
+coap_option_filter_set(coap_opt_filter_t filter, unsigned short type) {
+  return coap_option_filter_op(filter, type, FILTER_SET);
 }
 
-#endif
+int
+coap_option_filter_unset(coap_opt_filter_t filter, unsigned short type) {
+  return coap_option_filter_op(filter, type, FILTER_CLEAR);
+}
+
+int
+coap_option_filter_get(const coap_opt_filter_t filter, unsigned short type) {
+  /* Ugly cast to make the const go away (FILTER_GET wont change filter
+   * but as _set and _unset do, the function does not take a const). */
+  return coap_option_filter_op((uint16_t *)filter, type, FILTER_GET);
+}
