@@ -111,21 +111,6 @@ typedef struct coap_context_t {
   coap_tick_t sendqueue_basetime;
   coap_queue_t *sendqueue;
   void *pdata;
-#ifdef WITH_POSIX
-  int sockfd;                     /**< send/receive socket */
-#endif /* WITH_POSIX */
-
-#ifdef WITH_CONTIKI
-  struct uip_udp_conn *conn;      /**< uIP connection object */
-  struct etimer retransmit_timer; /**< fires when the next packet must be sent */
-  struct etimer notify_timer;     /**< used to check resources periodically */
-#endif /* WITH_CONTIKI */
-
-#ifdef WITH_LWIP
-  uint8_t timer_configured;       /**< Set to 1 when a retransmission is
-                                   *   scheduled using lwIP timers for this
-                                   *   context, otherwise 0. */
-#endif /* WITH_LWIP */
 
   /**
    * The last message id that was used is stored in this field. The initial
@@ -142,14 +127,9 @@ typedef struct coap_context_t {
 
   coap_response_handler_t response_handler;
 
-  ssize_t (*network_send)(struct coap_context_t *context,
-                          const coap_endpoint_t *local_interface,
-                          const coap_address_t *dst,
-                          unsigned char *data, size_t datalen);
-
-  ssize_t (*network_read)(coap_endpoint_t *ep, coap_packet_t **packet);
-
-  ssize_t (*network_peek)(coap_endpoint_t *ep);
+#ifdef CUSTOM_CONTEXT_FIELDS
+  CUSTOM_CONTEXT_FIELDS
+#endif
 
 } coap_context_t;
 

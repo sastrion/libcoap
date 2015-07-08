@@ -85,4 +85,13 @@ coap_is_mcast(const coap_address_t *a) {
   return a && _coap_is_mcast_impl(a);
 }
 
+/**
+ * Fill an address structure with given address and port.
+ *
+ */
+static inline int
+coap_address(const char *address, unsigned short port, coap_address_t *result) {
+  assert(result);
+  return _coap_address_impl(address, port, result);
+}
 #endif /* _COAP_ADDRESS_H_ */

@@ -8,6 +8,8 @@
 #ifndef INCLUDE_COAP_COAP_POSIX_H_
 #define INCLUDE_COAP_COAP_POSIX_H_
 
+#include <time.h>
+
 /**
  * This data type represents internal timer ticks with COAP_TICKS_PER_SECOND
  * resolution.
@@ -30,15 +32,13 @@ typedef long coap_tick_diff_t;
 #define COAP_TICKS_PER_SECOND 1000
 
 /**
- * Initializes the internal clock.
- */
-static inline void coap_clock_init(void) {
-}
-
-/**
  * Sets @p t to the internal time with COAP_TICKS_PER_SECOND resolution.
  */
-void coap_ticks(coap_tick_t *t);
+static inline void coap_ticks(coap_tick_t *t) {
+  struct timespec spec;
+  clock_gettime(CLOCK_MONOTONIC, &spec);
+  *t = (coap_tick_t)spec.tv_sec*1000 + (coap_tick_t)(spec.tv_nsec / 1.0e6);
+}
 
 /**
  * Helper function that converts coap ticks to wallclock time. On POSIX, this

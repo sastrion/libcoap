@@ -4,7 +4,7 @@
 #include <stdbool.h>
 
 #include "utils.h"
-#include "clock.h"
+//#include "clock.h"
 //#include "mbuf.h"
 
 #include "coap/debug.h"
@@ -247,7 +247,7 @@ static int send_request(coap_client_t *client, coap_request_t *request, coap_res
 #ifndef NDEBUG
 	char toks[request->token_length*2 + 1];
 	memset(toks, 0, sizeof(toks));
-	htos(request->token, request->token_length, toks, sizeof(toks));
+//	htos(request->token, request->token_length, toks, sizeof(toks));
 	info("Request sent (id:%d tk:%s)", tid, toks);
 #endif
 
@@ -362,7 +362,7 @@ static void response_handler(
 
 	char toks[received->hdr->token_length*2 + 1];
 	memset(toks, 0, sizeof(toks));
-	htos(received->hdr->token, received->hdr->token_length, toks, sizeof(toks));
+//	htos(received->hdr->token, received->hdr->token_length, toks, sizeof(toks));
 
 	coap_request_t *request = NULL;
 	HASH_FIND(hh, client->requests, received->hdr->token, received->hdr->token_length, request);
@@ -533,12 +533,11 @@ static coap_request_t *make_request(
 	if (!req)
 		return NULL;
 
-	if (!coap_request_set_uri(req, uri, FALSE)) {
+	if (!coap_request_set_uri(req, uri, 0)) {
 		goto error;
 	}
 
-	resolve_address(&req->uri.host, &req->dst);
-	req->dst.port = req->uri.port;
+	coap_address(req->uri.host.s, req->uri.port, &req->dst);
 
 	coap_response_t *resp = coap_malloc(sizeof(coap_response_t));
 	if (!resp) {

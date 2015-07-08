@@ -7,6 +7,7 @@
  */
 
 #include "coap_config.h"
+#include "coap_posix_io.h"
 
 #if defined(HAVE_STRNLEN) && defined(__GNUC__) && !defined(_GNU_SOURCE)
 #define _GNU_SOURCE 1
@@ -42,7 +43,7 @@
 #include "net/ip/uip-debug.h"
 #endif
 
-static coap_log_t maxlog = LOG_WARNING;	/* default maximum log level */
+static coap_log_t maxlog = LOG_DEBUG;	/* default maximum log level */
 
 const char *coap_package_name(void) {
   return PACKAGE_NAME;
@@ -476,7 +477,7 @@ coap_show_pdu(const coap_pdu_t *pdu) {
 #endif /* NDEBUG */
 
 void
-coap_log_impl(coap_log_t level, const char *format, ...) {
+coap_log_impl(const char *file, int line, coap_log_t level, const char *format, ...) {
   char timebuf[32];
   coap_tick_t now;
   va_list ap;
@@ -485,7 +486,8 @@ coap_log_impl(coap_log_t level, const char *format, ...) {
   if (maxlog < level)
     return;
 
-  log_fd = level <= LOG_CRIT ? COAP_ERR_FD : COAP_DEBUG_FD;
+  //log_fd = level <= LOG_CRIT ? COAP_ERR_FD : COAP_DEBUG_FD;
+  log_fd = stderr;
 
   coap_ticks(&now);
   if (print_timestamp(timebuf,sizeof(timebuf), now))

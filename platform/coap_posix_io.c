@@ -4,6 +4,8 @@
  *  Created on: Jun 11, 2015
  *      Author: wojtek
  */
+#include "coap_config.h"
+
 #ifdef HAVE_SYS_SELECT_H
 #include <sys/select.h>
 #endif
@@ -19,13 +21,15 @@
 #ifdef HAVE_UNISTD_H
 #include <unistd.h>
 #endif
-#include <errno.h>
 
+#include <coap/address.h>
+#include <fcntl.h>
+#include <errno.h>
 #include "debug.h"
 #include "mem.h"
 #include "coap_io.h"
 
-#if defined(WITH_POSIX) != defined(HAVE_NETINET_IN_H)
+#ifndef HAVE_NETINET_IN_H
 /* define struct in6_pktinfo and struct in_pktinfo if not available
  FIXME: check with configure
  */
@@ -54,98 +58,8 @@ struct in_pktinfo {
 
 #define SIN6(A) ((struct sockaddr_in6 *)(A))
 
-static inline struct coap_endpoint_t *
-coap_malloc_posix_endpoint(void)
-{
-  return (struct coap_endpoint_t *) coap_malloc(sizeof(struct coap_endpoint_t));
-}
 
-static inline void
-coap_free_posix_endpoint(struct coap_endpoint_t *ep)
-{
-  coap_free(ep);
-}
-
-coap_endpoint_t *
-coap_new_endpoint(const coap_address_t *addr, int flags)
-{
-  int sockfd = socket(addr->addr.sa.sa_family, SOCK_DGRAM, 0);
-  int on = 1;
-  struct coap_endpoint_t *ep;
-
-  if (sockfd < 0) {
-    coap_log(LOG_WARNING, "coap_new_endpoint: socket");
-    return NULL;
-  }
-
-  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
-    coap_log(LOG_WARNING, "coap_new_endpoint: setsockopt SO_REUSEADDR");
-
-  on = 1;
-  switch (addr->addr.sa.sa_family) {
-    case AF_INET:
-      if (setsockopt(sockfd, IPPROTO_IP, IP_PKTINFO, &on, sizeof(on)) < 0)
-        coap_log(LOG_ALERT, "coap_new_endpoint: setsockopt IP_PKTINFO\n");
-      break;
-    case AF_INET6:
-#ifdef IPV6_RECVPKTINFO
-      if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on)) < 0)
-      coap_log(LOG_ALERT, "coap_new_endpoint: setsockopt IPV6_RECVPKTINFO\n");
-#else /* IPV6_RECVPKTINFO */
-      if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_PKTINFO, &on, sizeof(on)) < 0)
-        coap_log(LOG_ALERT, "coap_new_endpoint: setsockopt IPV6_PKTINFO\n");
-#endif /* IPV6_RECVPKTINFO */
-      break;
-    default:
-      coap_log(LOG_ALERT, "coap_new_endpoint: unsupported sa_family\n");
-  }
-
-  if (bind(sockfd, &addr->addr.sa, addr->size) < 0) {
-    coap_log(LOG_WARNING, "coap_new_endpoint: bind");
-    close(sockfd);
-    return NULL;
-  }
-
-  ep = coap_malloc_posix_endpoint();
-  if (!ep) {
-    coap_log(LOG_WARNING, "coap_new_endpoint: malloc");
-    close(sockfd);
-    return NULL;
-  }
-
-  memset(ep, 0, sizeof(struct coap_endpoint_t));
-  ep->handle.fd = sockfd;
-  ep->flags = flags;
-  memcpy(&ep->addr, addr, sizeof(coap_address_t));
-
-#ifndef NDEBUG
-  if (LOG_DEBUG <= coap_get_log_level()) {
-#ifndef INET6_ADDRSTRLEN
-#define INET6_ADDRSTRLEN 40
-#endif
-    unsigned char addr_str[INET6_ADDRSTRLEN + 8];
-
-    if (coap_print_addr(addr, addr_str, INET6_ADDRSTRLEN + 8)) {
-      debug("created %sendpoint %s\n",
-            ep->flags & COAP_ENDPOINT_DTLS ? "DTLS " : "", addr_str);
-    }
-  }
-#endif /* NDEBUG */
-
-  return (coap_endpoint_t *) ep;
-}
-
-void
-coap_free_endpoint(coap_endpoint_t *ep)
-{
-  if (ep) {
-    if (ep->handle.fd >= 0)
-      close(ep->handle.fd);
-    coap_free_posix_endpoint((struct coap_endpoint_t *) ep);
-  }
-}
-
-static coap_packet_t *
+coap_packet_t *
 coap_malloc_packet(void)
 {
   coap_packet_t *packet;
@@ -164,7 +78,7 @@ coap_free_packet(coap_packet_t *packet)
   coap_free(packet);
 }
 
-static inline size_t
+size_t
 coap_get_max_packetlength(const coap_packet_t *packet UNUSED_PARAM)
 {
   return COAP_MAX_PDU_SIZE;
@@ -173,7 +87,7 @@ coap_get_max_packetlength(const coap_packet_t *packet UNUSED_PARAM)
 void
 coap_packet_populate_endpoint(coap_packet_t *packet, coap_endpoint_t *target)
 {
-  target->handle = packet->interface->handle;
+  target->fd = packet->interface->fd;
   memcpy(&target->addr, &packet->dst, sizeof(target->addr));
   target->ifindex = packet->ifindex;
   target->flags = 0; /* FIXME */
@@ -191,14 +105,16 @@ coap_packet_get_memmapped(coap_packet_t *packet, unsigned char **address,
   *length = packet->length;
 }
 
-ssize_t
-coap_network_send(struct coap_context_t *context UNUSED_PARAM,
-                  const coap_endpoint_t *local_interface,
-                  const coap_address_t *dst, unsigned char *data,
-                  size_t datalen)
+static ssize_t
+coap_network_send(struct coap_context_t *context,
+                  const struct coap_endpoint_t *local_interface,
+                  const struct coap_address_t *dst,
+                  const coap_pdu_t *pdu)
 {
 
   struct coap_endpoint_t *ep = (struct coap_endpoint_t *) local_interface;
+  unsigned char *data = (unsigned char *)pdu->hdr;
+  size_t datalen = pdu->length;
 
   /* a buffer large enough to hold all protocol address types */
   char buf[CMSG_LEN(sizeof(struct sockaddr_storage))];
@@ -264,7 +180,8 @@ coap_network_send(struct coap_context_t *context UNUSED_PARAM,
       return -1;
   }
 
-  return sendmsg(ep->handle.fd, &mhdr, 0);
+  return sendmsg(ep->fd, &mhdr, 0);
+//  return sendto(ep->fd, data, datalen, 0, (const struct sockaddr *)&dst->addr, dst->size);
 }
 
 /**
@@ -278,7 +195,7 @@ is_local_if(const coap_address_t *local, const coap_address_t *dst)
   return coap_address_isany(local) || coap_address_equals(dst, local);
 }
 
-ssize_t
+static ssize_t
 coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet)
 {
   ssize_t len = -1;
@@ -315,20 +232,20 @@ coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet)
   mhdr.msg_controllen = sizeof(msg_control);
   assert(sizeof(msg_control) == CMSG_LEN(sizeof(struct sockaddr_storage)));
 
-  len = recvmsg(ep->handle.fd, &mhdr, 0);
+  len = recvmsg(ep->fd, &mhdr, 0);
 
   if (len < 0) {
-    coap_log(LOG_WARNING, "coap_network_read: %s\n", strerror(errno));
+    //coap_log(LOG_WARNING, "coap_network_read: %s\n", strerror(errno));
     goto error;
   } else {
     struct cmsghdr *cmsg;
 
     coap_log(LOG_DEBUG, "received %d bytes on fd %d\n", (int )len,
-             ep->handle.fd);
+             ep->fd);
 
     /* use getsockname() to get the local port */
     (*packet)->dst.size = sizeof((*packet)->dst.addr);
-    if (getsockname(ep->handle.fd, &(*packet)->dst.addr.sa,
+    if (getsockname(ep->fd, &(*packet)->dst.addr.sa,
                     &(*packet)->dst.size) < 0) {
       coap_log(LOG_DEBUG, "cannot determine local port\n");
       goto error;
@@ -396,6 +313,90 @@ coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet)
   error: coap_free_packet(*packet);
   *packet = NULL;
   return -1;
+}
+
+coap_endpoint_t *
+coap_new_endpoint(const coap_address_t *addr, int flags)
+{
+  int sockfd = socket(addr->addr.sa.sa_family, SOCK_DGRAM, 0);
+  int on = 1;
+  struct coap_endpoint_t *ep;
+
+  if (sockfd < 0) {
+    coap_log(LOG_WARNING, "coap_new_endpoint: socket");
+    return NULL;
+  }
+
+  if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0)
+    coap_log(LOG_WARNING, "coap_new_endpoint: setsockopt SO_REUSEADDR");
+
+  fcntl(sockfd, F_SETFL, O_NONBLOCK);
+
+  on = 1;
+  switch (addr->addr.sa.sa_family) {
+    case AF_INET:
+      if (setsockopt(sockfd, IPPROTO_IP, IP_PKTINFO, &on, sizeof(on)) < 0)
+        coap_log(LOG_ALERT, "coap_new_endpoint: setsockopt IP_PKTINFO\n");
+      break;
+    case AF_INET6:
+#ifdef IPV6_RECVPKTINFO
+      if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_RECVPKTINFO, &on, sizeof(on)) < 0)
+      coap_log(LOG_ALERT, "coap_new_endpoint: setsockopt IPV6_RECVPKTINFO\n");
+#else /* IPV6_RECVPKTINFO */
+      if (setsockopt(sockfd, IPPROTO_IPV6, IPV6_PKTINFO, &on, sizeof(on)) < 0)
+        coap_log(LOG_ALERT, "coap_new_endpoint: setsockopt IPV6_PKTINFO\n");
+#endif /* IPV6_RECVPKTINFO */
+      break;
+    default:
+      coap_log(LOG_ALERT, "coap_new_endpoint: unsupported sa_family\n");
+  }
+
+  if (bind(sockfd, &addr->addr.sa, addr->size) < 0) {
+    coap_log(LOG_WARNING, "coap_new_endpoint: bind");
+    close(sockfd);
+    return NULL;
+  }
+
+  ep = coap_malloc_type(COAP_ENDPOINT, sizeof(struct coap_endpoint_t));
+  if (!ep) {
+    coap_log(LOG_WARNING, "coap_new_endpoint: malloc");
+    close(sockfd);
+    return NULL;
+  }
+
+  memset(ep, 0, sizeof(struct coap_endpoint_t));
+  ep->fd = sockfd;
+  ep->flags = flags;
+  ep->network_send = coap_network_send;
+  ep->network_read = coap_network_read;
+
+  memcpy(&ep->addr, addr, sizeof(coap_address_t));
+
+#ifndef NDEBUG
+  if (LOG_DEBUG <= coap_get_log_level()) {
+#ifndef INET6_ADDRSTRLEN
+#define INET6_ADDRSTRLEN 40
+#endif
+    unsigned char addr_str[INET6_ADDRSTRLEN + 8];
+
+    if (coap_print_addr(addr, addr_str, INET6_ADDRSTRLEN + 8)) {
+      debug("created %sendpoint %s\n",
+            ep->flags & COAP_ENDPOINT_DTLS ? "DTLS " : "", addr_str);
+    }
+  }
+#endif /* NDEBUG */
+
+  return (coap_endpoint_t *) ep;
+}
+
+void
+coap_free_endpoint(coap_endpoint_t *ep)
+{
+  if (ep) {
+    if (ep->fd >= 0)
+      close(ep->fd);
+    coap_free_type(COAP_ENDPOINT, (struct coap_endpoint_t *) ep);
+  }
 }
 
 #undef SIN6

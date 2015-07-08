@@ -10,6 +10,15 @@
 
 #include "uip.h"
 
+#define CUSTOM_CONTEXT_FIELDS \
+  struct uip_udp_conn *conn;      \
+  struct etimer retransmit_timer; \
+  struct etimer notify_timer;
+
+/**< uIP connection object */
+/**< fires when the next packet must be sent */
+/**< used to check resources periodically */
+
 typedef struct coap_address_t {
   uip_ipaddr_t addr;
   unsigned short port;
@@ -29,10 +38,9 @@ typedef struct coap_address_t {
  * tuple (handle, addr) must uniquely identify this endpoint.
  */
 typedef struct coap_endpoint_t {
-  union {
-    int fd;       /**< on POSIX systems */
-    void *conn;   /**< opaque connection (e.g. uip_conn in Contiki) */
-  } handle;       /**< opaque handle to identify this endpoint */
+  coap_network_read_t network_read;
+  coap_network_send_t network_send;
+  void *conn;   /**< opaque connection (e.g. uip_conn in Contiki) */
   coap_address_t addr; /**< local interface address */
   int ifindex;
   int flags;

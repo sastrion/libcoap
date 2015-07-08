@@ -39,37 +39,6 @@ coap_free_contiki_endpoint(struct coap_endpoint_t *ep) {
   ep_initialized = 0;
 }
 
-coap_endpoint_t *
-coap_new_endpoint(const coap_address_t *addr, int flags) {
-  struct coap_endpoint_t *ep = coap_malloc_contiki_endpoint();
-
-  if (ep) {
-    memset(ep, 0, sizeof(struct coap_endpoint_t));
-    ep->handle.conn = udp_new(NULL, 0, NULL);
-
-    if (!ep->handle.conn) {
-      coap_free_endpoint(ep);
-      return NULL;
-    }
-
-    coap_address_init(&ep->addr);
-    uip_ipaddr_copy(&ep->addr.addr, &addr->addr);
-    ep->addr.port = addr->port;
-    udp_bind((struct uip_udp_conn *)ep->handle.conn, addr->port);
-  }
-  return ep;
-}
-
-void
-coap_free_endpoint(coap_endpoint_t *ep) {
-  if (ep) {
-    if (ep->handle.conn) {
-      uip_udp_remove((struct uip_udp_conn *)ep->handle.conn);
-    }
-    coap_free_contiki_endpoint(ep);
-  }
-}
-
 static inline coap_packet_t *
 coap_malloc_packet(void) {
   return (coap_packet_t *)coap_malloc_type(COAP_PACKET, 0);
@@ -88,7 +57,7 @@ coap_get_max_packetlength(const coap_packet_t *packet UNUSED_PARAM) {
 void
 coap_packet_populate_endpoint(coap_packet_t *packet, coap_endpoint_t *target)
 {
-  target->handle = packet->interface->handle;
+  target->conn = packet->interface->conn;
   memcpy(&target->addr, &packet->dst, sizeof(target->addr));
   target->ifindex = packet->ifindex;
   target->flags = 0; /* FIXME */
@@ -111,13 +80,15 @@ ssize_t
 coap_network_send(struct coap_context_t *context,
 		  const coap_endpoint_t *local_interface,
 		  const coap_address_t *dst,
-		  unsigned char *data,
-		  size_t datalen) {
+      const coap_pdu_t *pdu) {
 
   struct coap_endpoint_t *ep =
     (struct coap_endpoint_t *)local_interface;
 
-  uip_udp_packet_sendto((struct uip_udp_conn *)ep->handle.conn, data, datalen,
+  unsigned char *data = pdu->hdr;
+  size_t datalen = pdu->length;
+
+  uip_udp_packet_sendto((struct uip_udp_conn *)ep->conn, data, datalen,
 			&dst->addr, dst->port);
   return datalen;
 }
@@ -193,4 +164,37 @@ coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet) {
   coap_free_packet(*packet);
   *packet = NULL;
   return -1;
+}
+
+coap_endpoint_t *
+coap_new_endpoint(const coap_address_t *addr, int flags) {
+  struct coap_endpoint_t *ep = coap_malloc_contiki_endpoint();
+
+  if (ep) {
+    memset(ep, 0, sizeof(struct coap_endpoint_t));
+    ep->conn = udp_new(NULL, 0, NULL);
+
+    if (!ep->conn) {
+      coap_free_endpoint(ep);
+      return NULL;
+    }
+
+    coap_address_init(&ep->addr);
+    uip_ipaddr_copy(&ep->addr.addr, &addr->addr);
+    ep->addr.port = addr->port;
+    ep->network_send = coap_network_send;
+    ep->network_read = coap_network_read;
+    udp_bind((struct uip_udp_conn *)ep->conn, addr->port);
+  }
+  return ep;
+}
+
+void
+coap_free_endpoint(coap_endpoint_t *ep) {
+  if (ep) {
+    if (ep->conn) {
+      uip_udp_remove((struct uip_udp_conn *)ep->conn);
+    }
+    coap_free_contiki_endpoint(ep);
+  }
 }

@@ -12,6 +12,12 @@
 #include <lwip/udp.h>
 #include <lwip/ip_addr.h>
 
+/**< Set to 1 when a retransmission is
+ *   scheduled using lwIP timers for this
+ *   context, otherwise 0. */
+#define CUSTOM_CONTEXT_FIELDS \
+  uint8_t timer_configured;
+
 typedef struct coap_address_t {
   uint16_t port;
   ip_addr_t addr;
@@ -45,6 +51,8 @@ typedef struct coap_address_t {
  * tuple (handle, addr) must uniquely identify this endpoint.
  */
 typedef struct coap_endpoint_t {
+  coap_network_read_t network_read;
+  coap_network_send_t network_send;
   struct udp_pcb *pcb;
  /**< @FIXME this was added in a hurry, not sure it confirms to the overall model --chrysn */
   struct coap_context_t *context;
