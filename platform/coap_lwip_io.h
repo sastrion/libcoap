@@ -10,6 +10,26 @@
 
 #include <lwip/pbuf.h>
 #include <lwip/udp.h>
+#include <lwip/ip_addr.h>
+
+typedef struct coap_address_t {
+  uint16_t port;
+  ip_addr_t addr;
+} coap_address_t;
+
+/* FIXME oversimplification: just assuming it's an ipv4 address instead of
+ * looking up the appropraite lwip function */
+
+#define _coap_address_equals_impl(A, B)   \
+        ((A)->addr.addr == (B)->addr.addr \
+        && A->port == B->port)
+
+/** @todo implementation of _coap_address_isany_impl() for Contiki */
+#define _coap_address_isany_impl(A)  0
+
+/* FIXME sure there is something in lwip */
+#define _coap_is_mcast_impl(Address) 0
+
 
 #define CUSTOM_PDU_FIELDS  struct pbuf *pbuf;        /**< lwIP PBUF. The package data will always reside
                                                      *    inside the pbuf's payload, but this pointer
@@ -19,6 +39,20 @@
                                                      *    is checked to be 1 when the pbuf is assigned
                                                      *    to the pdu, and the pbuf stays exclusive to
                                                      *    this pdu. */
+
+/**
+ * Abstraction of virtual endpoint that can be attached to coap_context_t. The
+ * tuple (handle, addr) must uniquely identify this endpoint.
+ */
+typedef struct coap_endpoint_t {
+  struct udp_pcb *pcb;
+ /**< @FIXME this was added in a hurry, not sure it confirms to the overall model --chrysn */
+  struct coap_context_t *context;
+  coap_address_t addr; /**< local interface address */
+  int ifindex;
+  int flags;
+} coap_endpoint_t;
+
 
 /*
  * This is only included in coap_io.h instead of .c in order to be available for
@@ -33,19 +67,6 @@ struct coap_packet_t {
   const coap_endpoint_t *local_interface;
   uint16_t srcport;
 };
-
-/**
- * Abstraction of virtual endpoint that can be attached to coap_context_t. The
- * tuple (handle, addr) must uniquely identify this endpoint.
- */
-typedef struct coap_endpoint_t {
-  struct udp_pcb *pcb;
- /**< @FIXME this was added in a hurry, not sure it confirms to the overall model --chrysn */
-  struct coap_context_t *context;
-  coap_address_t addr; /**< local interface address */
-  int ifindex;
-  int flags;
-} coap_endpoint_t;
 
 /**
  * Get the pbuf of a packet. The caller takes over responsibility for freeing

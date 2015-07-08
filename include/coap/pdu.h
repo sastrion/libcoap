@@ -255,7 +255,7 @@ typedef struct {
  * Header structure for CoAP PDUs
  */
 
-typedef struct {
+typedef struct coap_pdu_t {
   size_t max_size;          /**< allocated storage for options and data */
   coap_hdr_t *hdr;          /**< Address of the first byte of the CoAP message.
                              *   This may or may not equal (coap_hdr_t*)(pdu+1)

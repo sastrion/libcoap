@@ -30,7 +30,7 @@
 #include "mbuf.h"
 #endif
 
-#ifndef WITH_CUSTOM_PDU_HANDLING
+#ifndef CUSTOM_COAP_PDU_HANDLING
 
 void
 coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
