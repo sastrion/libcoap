@@ -3,7 +3,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-#include "utils.h"
+//#include "utils.h"
 //#include "clock.h"
 //#include "mbuf.h"
 
@@ -417,7 +417,7 @@ void coap_client_init(coap_client_t *client, coap_context_t *ctx, coap_endpoint_
 
 void coap_client_deinit(coap_client_t *client)
 {
-	UNUSED(client);
+	(void)client;
 	//TODO: cancel subscriptions
 }
 

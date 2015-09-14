@@ -76,7 +76,7 @@ typedef unsigned char uint8_t;
 #define UTHASH_VERSION 1.9.9
 
 #ifndef uthash_fatal
-#define uthash_fatal(msg) return//exit(-1)        /* fatal error (out of memory,etc) */
+#define uthash_fatal(msg) exit(-1)        /* fatal error (out of memory,etc) */
 #endif
 #ifndef uthash_malloc
 #define uthash_malloc(sz) malloc(sz)      /* malloc fcn                      */

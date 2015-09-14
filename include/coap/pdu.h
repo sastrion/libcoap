@@ -31,6 +31,10 @@
 #define COAP_DEFAULT_PORT           5683 /* CoAP default UDP port */
 #endif
 
+#ifndef COAP_SECURE_PORT
+#define COAP_SECURE_PORT            5684 /* CoAP DTLS-secured UDP port */
+#endif
+
 #ifndef COAP_DEFAULT_MAX_AGE
 #define COAP_DEFAULT_MAX_AGE          60 /* default maximum object lifetime in seconds */
 #endif

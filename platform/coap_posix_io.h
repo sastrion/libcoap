@@ -142,6 +142,8 @@ _coap_is_mcast_impl(const coap_address_t *a) {
  return 0;
 }
 
+#define _coap_address_size_impl(a) (a->size)
+
 /**
  * Abstraction of virtual endpoint that can be attached to coap_context_t. The
  * tuple (handle, addr) must uniquely identify this endpoint.

@@ -35,6 +35,32 @@ typedef enum {
 } coap_log_t;
 #endif
 
+#ifndef min
+#define min(a,b) ((a) < (b) ? (a) : (b))
+#endif
+
+/** Returns a textual description of the message type @p t. */
+static const char *
+msg_type_string(uint8_t t) {
+  static const char * const types[] = { "CON", "NON", "ACK", "RST", "???" };
+
+  return types[min(t, sizeof(types)/sizeof(char *) - 1)];
+}
+
+/** Returns a textual description of the method or response code. */
+static const char *
+msg_code_string(uint8_t c) {
+  static const char * const methods[] = { "0.00", "GET", "POST", "PUT", "DELETE", "PATCH" };
+  static char buf[5];
+
+  if (c < sizeof(methods)/sizeof(char *)) {
+    return methods[c];
+  } else {
+    snprintf(buf, sizeof(buf), "%u.%02u", c >> 5, c & 0x1f);
+    return buf;
+  }
+}
+
 /** Returns the current log level. */
 coap_log_t coap_get_log_level(void);
 
@@ -61,9 +87,18 @@ void coap_log_impl(const char *file, int line, coap_log_t level, const char *for
 #ifndef NDEBUG
 
 /* A set of convenience macros for common log levels. */
+#ifndef info
 #define info(...) coap_log(LOG_INFO, __VA_ARGS__)
+#endif
+
+#ifndef warn
 #define warn(...) coap_log(LOG_WARNING, __VA_ARGS__)
+#endif
+
+#ifndef debug
 #define debug(...) coap_log(LOG_DEBUG, __VA_ARGS__)
+#endif
+
 #define critical(...) coap_log(LOG_CRIT, __VA_ARGS__)
 
 #include "pdu.h"

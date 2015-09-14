@@ -90,13 +90,14 @@ coap_packet_populate_endpoint(coap_packet_t *packet, coap_endpoint_t *target)
   target->fd = packet->interface->fd;
   memcpy(&target->addr, &packet->dst, sizeof(target->addr));
   target->ifindex = packet->ifindex;
-  target->flags = 0; /* FIXME */
+  target->flags = packet->interface->flags;
 }
 void
 coap_packet_copy_source(coap_packet_t *packet, coap_address_t *target)
 {
   memcpy(target, &packet->src, sizeof(coap_address_t));
 }
+
 void
 coap_packet_get_memmapped(coap_packet_t *packet, unsigned char **address,
                           size_t *length)
@@ -181,7 +182,6 @@ coap_network_send(struct coap_context_t *context,
   }
 
   return sendmsg(ep->fd, &mhdr, 0);
-//  return sendto(ep->fd, data, datalen, 0, (const struct sockaddr *)&dst->addr, dst->size);
 }
 
 /**

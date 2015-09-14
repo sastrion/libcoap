@@ -1172,6 +1172,10 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
 
   coap_option_filter_clear(opt_filter);
 
+  char *uri = coap_get_uri(node->pdu);
+  debug("%s %s", msg_code_string(node->pdu->hdr->code), uri);
+  coap_free_type(COAP_STRING, uri);
+
   /* try to find the resource from the request URI */
   coap_hash_request_uri(node->pdu, key);
   resource = coap_get_resource_from_key(context, key);
@@ -1266,6 +1270,8 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
 
       h(context, resource, &node->local_if, &node->remote, node->pdu, &token,
         response);
+
+      debug("%s %d", msg_type_string(response->hdr->type), COAP_RESPONSE_CODE2(response->hdr->code));
 
       if (!no_response(node->pdu, response)) {
         // Cancel subscription if handler returned and error or the client

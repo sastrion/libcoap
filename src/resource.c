@@ -351,7 +351,7 @@ coap_add_resource(coap_context_t *context, coap_resource_t *resource) {
     resource->uri.length = strlen(resource->uri.s);
     coap_hash_path(resource->uri.s, resource->uri.length, resource->key);
   }
-  debug("Added resource 0x%02x%02x%02x%02x", resource->key[0], resource->key[1], resource->key[2], resource->key[3]);
+  debug("Added resource 0x%02x%02x%02x%02x\n", resource->key[0], resource->key[1], resource->key[2], resource->key[3]);
 }
 
 static void

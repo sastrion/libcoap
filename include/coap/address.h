@@ -94,4 +94,13 @@ coap_address(const char *address, unsigned short port, coap_address_t *result) {
   assert(result);
   return _coap_address_impl(address, port, result);
 }
+
+/**
+ * Returns size of a given address object.
+ */
+static inline int
+coap_address_size(const coap_address_t *a) {
+  assert(a);
+  return _coap_address_size_impl(a);
+}
 #endif /* _COAP_ADDRESS_H_ */
