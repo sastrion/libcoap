@@ -1,12 +1,5 @@
-/*
- * coap_contiki_io.h
- *
- *  Created on: Jun 11, 2015
- *      Author: wojtek
- */
-
-#ifndef _COAP_CONTIKI_IO_H_
-#define _COAP_CONTIKI_IO_H_
+#ifndef _PLATFORM_IO_H_
+#define _PLATFORM_IO_H_
 
 #include "uip.h"
 
@@ -61,4 +54,4 @@ struct coap_packet_t {
   unsigned char payload[];      /**< payload */
 };
 
-#endif /* _COAP_CONTIKI_IO_H_ */
+#endif /* _PLATFORM_IO_H_ */

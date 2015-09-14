@@ -3,7 +3,7 @@
  * Copyright (C) 2010--2014 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use.
+ * README for terms of use. 
  */
 
 #include "coap_config.h"
@@ -25,13 +25,9 @@
 #include "encode.h"
 #include "mem.h"
 
-#ifdef ST_NODE
-#include "net_common.h"
-#include "mbuf.h"
-#endif
+#include "platform_utils.h"
 
 #ifndef CUSTOM_COAP_PDU_HANDLING
-
 void
 coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
   assert(pdu);
@@ -43,6 +39,7 @@ coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
   pdu->data = NULL;
 
   memset(pdu->hdr, 0, size);
+  pdu->max_size = size;
   pdu->hdr->version = COAP_DEFAULT_VERSION;
   pdu->hdr->token_length = 0;
 }
@@ -80,7 +77,7 @@ coap_pdu_t *
 coap_new_pdu(void) {
   coap_pdu_t *pdu;
 
-  pdu = coap_pdu_init(0, 0, ntohs(COAP_INVALID_TID), COAP_MAX_PDU_SIZE);
+  pdu = coap_pdu_init(0, 0, NTOHS(COAP_INVALID_TID), COAP_MAX_PDU_SIZE);
 
 #ifndef NDEBUG
   if (!pdu)
@@ -109,12 +106,8 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
     return 0;
 
   pdu->hdr->token_length = len;
-  if (len) {
-#ifdef ST_NODE
-    mbuf_write(pdu->mbuf, data, len, pdu->length);
-#else
+  if (len)
     memcpy(pdu->hdr->token, data, len);
-#endif
   }
   pdu->max_delta = 0;
   pdu->length = HEADERLENGTH;
@@ -127,9 +120,7 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
 size_t
 coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const unsigned char *data) {
   size_t optsize;
-#ifndef ST_NODE
   coap_opt_t *opt;
-#endif
 
   assert(pdu);
   pdu->data = NULL;
@@ -139,14 +130,11 @@ coap_add_option(coap_pdu_t *pdu, unsigned short type, unsigned int len, const un
     return 0;
   }
 
-  /* encode option and check length */
-#ifdef ST_NODE
-  optsize = coap_opt_encode_to_mbuf(pdu, type, data, len);
-#else
   opt = (unsigned char *)pdu->hdr + pdu->length;
+
+  /* encode option and check length */
   optsize = coap_opt_encode(opt, pdu->max_size - pdu->length,
 			    type - pdu->max_delta, data, len);
-#endif
 
   if (!optsize) {
     warn("coap_add_option: cannot add option\n");
@@ -177,12 +165,8 @@ coap_add_option_later(coap_pdu_t *pdu, unsigned short type, unsigned int len) {
   opt = (unsigned char *)pdu->hdr + pdu->length;
 
   /* encode option and check length */
-#ifdef ST_NODE
-  optsize = coap_opt_encode_to_mbuf(pdu, type, NULL, len);
-#else
   optsize = coap_opt_encode(opt, pdu->max_size - pdu->length,
 			    type - pdu->max_delta, NULL, len);
-#endif
 
   if (!optsize) {
     warn("coap_add_option: cannot add option\n");
@@ -213,11 +197,8 @@ coap_add_data(coap_pdu_t *pdu, unsigned int len, const unsigned char *data) {
   pdu->data = (unsigned char *)pdu->hdr + pdu->length;
   *pdu->data = COAP_PAYLOAD_START;
   pdu->data++;
-#ifdef ST_NODE
-  mbuf_write(pdu->mbuf, data, len, pdu->length+1);
-#else
+
   memcpy(pdu->data, data, len);
-#endif
   pdu->length += len + 1;
   return 1;
 }
@@ -312,9 +293,6 @@ coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *pdu) {
 
   assert(data);
   assert(pdu);
-#ifdef ST_NODE
-  pdu->payload_offset = (unsigned short)length;
-#endif
 
   if (pdu->max_size < length) {
     debug("insufficient space to store parsed PDU\n");
@@ -325,16 +303,10 @@ coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *pdu) {
     debug("discarded invalid PDU\n");
   }
 
-#ifdef WITH_LWIP
-  LWIP_ASSERT("coap_pdu_parse with unexpected addresses", data == pdu->hdr);
-  LWIP_ASSERT("coap_pdu_parse with unexpected length", length == pdu->length);
-#else
-
   pdu->hdr->version = data[0] >> 6;
   pdu->hdr->type = (data[0] >> 4) & 0x03;
   pdu->hdr->token_length = data[0] & 0x0f;
   pdu->hdr->code = data[1];
-#endif
   pdu->data = NULL;
 
   /* sanity checks */
@@ -359,7 +331,7 @@ coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *pdu) {
   /* append data (including the Token) to pdu structure */
   memcpy(pdu->hdr + 1, data + sizeof(coap_hdr_t), length - sizeof(coap_hdr_t));
   pdu->length = length;
-
+ 
   /* Finally calculate beginning of data block and thereby check integrity
    * of the PDU structure. */
 #endif
@@ -379,9 +351,6 @@ coap_pdu_parse(unsigned char *data, size_t length, coap_pdu_t *pdu) {
   if (length) {
     assert(*opt == COAP_PAYLOAD_START);
     opt++; length--;
-#ifdef ST_NODE
-    pdu->payload_offset -= (unsigned short)length;
-#endif
 
     if (!length) {
       debug("coap_pdu_parse: message ending in payload start marker\n");

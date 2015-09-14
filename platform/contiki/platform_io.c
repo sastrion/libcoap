@@ -1,9 +1,4 @@
-/*
- * coap_contiki_io.c
- *
- *  Created on: Jun 11, 2015
- *      Author: wojtek
- */
+#include "coap_io.h"
 
 
 #include "coap_config.h"
@@ -93,14 +88,9 @@ coap_network_send(struct coap_context_t *context,
   return datalen;
 }
 
-/**
- * Checks if a message with destination address @p dst matches the
- * local interface with address @p local. This function returns @c 1
- * if @p dst is a valid match, and @c 0 otherwise.
- */
-static inline int
-is_local_if(const coap_address_t *local, const coap_address_t *dst) {
-  return coap_address_isany(local) || coap_address_equals(dst, local);
+coap_packet_t *
+coap_malloc_packet(void) {
+  return (coap_packet_t *)coap_malloc_type(COAP_PACKET, 0);
 }
 
 ssize_t
@@ -111,7 +101,7 @@ coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet) {
   assert(packet);
 
   *packet = coap_malloc_packet();
-
+  
   if (!*packet) {
     warn("coap_network_read: insufficient memory, drop packet\n");
     return -1;
@@ -126,13 +116,13 @@ coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet) {
     uip_ipaddr_copy(&(*packet)->dst.addr, &UIP_IP_BUF->destipaddr);
     (*packet)->dst.port = UIP_UDP_BUF->destport;
 
-    if (!is_local_if(&ep->addr, &(*packet)->dst)) {
+    if (!coap_is_local_if(&ep->addr, &(*packet)->dst)) {
       coap_log(LOG_DEBUG, "packet received on wrong interface, dropped\n");
       goto error;
     }
 
     len = uip_datalen();
-
+    
     if (len > coap_get_max_packetlength(*packet)) {
       /* FIXME: we might want to send back a response */
       warn("discarded oversized packet\n");
@@ -146,7 +136,7 @@ coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet) {
 #define INET6_ADDRSTRLEN 40
 #endif
       unsigned char addr_str[INET6_ADDRSTRLEN+8];
-
+      
       if (coap_print_addr(&(*packet)->src, addr_str, INET6_ADDRSTRLEN+8)) {
 	debug("received %zd bytes from %s\n", len, addr_str);
       }
@@ -156,6 +146,9 @@ coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet) {
     (*packet)->length = len;
     memcpy(&(*packet)->payload, uip_appdata, len);
   }
+
+#undef UIP_IP_BUF
+#undef UIP_UDP_BUF
 
   (*packet)->interface = ep;
 

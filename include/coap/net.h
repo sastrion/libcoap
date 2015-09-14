@@ -44,21 +44,10 @@ extern "C" {
 #include "coap_io.h"
 #include "prng.h"
 #include "pdu.h"
+#include "coap_context.h"
 #include "coap_time.h"
 
-struct coap_queue_t;
-
-typedef struct coap_queue_t {
-  struct coap_queue_t *next;
-  coap_tick_t t;                /**< when to send PDU for the next time */
-  unsigned char retransmit_cnt; /**< retransmission counter, will be removed
-                                 *    when zero */
-  unsigned int timeout;         /**< the randomized timeout value */
-  coap_endpoint_t local_if;     /**< the local address interface */
-  coap_address_t remote;        /**< remote address */
-  coap_tid_t id;                /**< unique transaction id */
-  coap_pdu_t *pdu;              /**< the CoAP PDU to send */
-} coap_queue_t;
+#include "platform_utils.h"
 
 /** Adds node to given queue, ordered by node->t. */
 int coap_insert_node(coap_queue_t **queue, coap_queue_t *node);
@@ -80,58 +69,11 @@ struct coap_context_t;
 struct coap_async_state_t;
 #endif
 
-/** Message handler that is used as call-back in coap_context_t */
-typedef void (*coap_response_handler_t)(struct coap_context_t  *,
-                                        const coap_endpoint_t *local_interface,
-                                        const coap_address_t *remote,
-                                        coap_pdu_t *sent,
-                                        coap_pdu_t *received,
-                                        const coap_tid_t id);
-
 #define COAP_MID_CACHE_SIZE 3
 typedef struct {
   unsigned char flags[COAP_MID_CACHE_SIZE];
   coap_key_t item[COAP_MID_CACHE_SIZE];
 } coap_mid_cache_t;
-
-/** The CoAP stack's global state is stored in a coap_context_t object */
-typedef struct coap_context_t {
-  coap_opt_filter_t known_options;
-  struct coap_resource_t *resources; /**< hash table or list of known resources */
-
-#ifndef WITHOUT_ASYNC
-  /**
-   * list of asynchronous transactions */
-  struct coap_async_state_t *async_state;
-#endif /* WITHOUT_ASYNC */
-
-  /**
-   * The time stamp in the first element of the sendqeue is relative
-   * to sendqueue_basetime. */
-  coap_tick_t sendqueue_basetime;
-  coap_queue_t *sendqueue;
-  void *pdata;
-
-  /**
-   * The last message id that was used is stored in this field. The initial
-   * value is set by coap_new_context() and is usually a random value. A new
-   * message id can be created with coap_new_message_id().
-   */
-  unsigned short message_id;
-
-  /**
-   * The next value to be used for Observe. This field is global for all
-   * resources and will be updated when notifications are created.
-   */
-  unsigned int observe;
-
-  coap_response_handler_t response_handler;
-
-#ifdef CUSTOM_CONTEXT_FIELDS
-  CUSTOM_CONTEXT_FIELDS
-#endif
-
-} coap_context_t;
 
 /**
  * Registers a new message handler that is called whenever a response was
@@ -191,12 +133,8 @@ coap_context_t *coap_new_context(void);
  */
 static inline unsigned short
 coap_new_message_id(coap_context_t *context) {
-  context->message_id += 1;
-#ifndef WITH_CONTIKI
-  return htons(context->message_id);
-#else /* WITH_CONTIKI */
-  return uip_htons(context->message_id);
-#endif
+  context->message_id++;
+  return HTONS(context->message_id);
 }
 
 /*
@@ -527,3 +465,4 @@ coap_pdu_t *coap_wellknown_response(coap_context_t *context,
 #endif
 
 #endif /* _COAP_NET_H_ */
+

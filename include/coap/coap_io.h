@@ -28,7 +28,7 @@
 #define COAP_ENDPOINT_NOSEC 0x00
 #define COAP_ENDPOINT_DTLS  0x01
 
-#include <coap/pdu.h>
+#include "platform_io.h"
 
 struct coap_address_t;
 struct coap_context_t;
@@ -105,5 +105,17 @@ void coap_packet_copy_source(coap_packet_t *packet, struct coap_address_t *targe
 void coap_packet_get_memmapped(coap_packet_t *packet,
                                unsigned char **address,
                                size_t *length);
+
+
+size_t
+coap_get_max_packetlength(const coap_packet_t *packet);
+
+/**
+ * Checks if a message with destination address @p dst matches the
+ * local interface with address @p local. This function returns @c 1
+ * if @p dst is a valid match, and @c 0 otherwise.
+ */
+int
+coap_is_local_if(const coap_address_t *local, const coap_address_t *dst);
 
 #endif /* _COAP_IO_H_ */

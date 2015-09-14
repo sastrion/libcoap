@@ -21,13 +21,35 @@
 extern "C" {
 #endif
 
-#include "coap_config.h"
+#include "platform_time.h"
 
 /**
  * @defgroup clock Clock Handling
  * Default implementation of internal clock.
  * @{
  */
+
+/**
+ * Initializes the internal clock.
+ */
+void coap_clock_init(void);
+
+/**
+ * Sets @p t to the internal time with COAP_TICKS_PER_SECOND resolution.
+ */
+void coap_ticks(coap_tick_t *t);
+
+/**
+ * Helper function that converts coap ticks to wallclock time. On POSIX, this
+ * function returns the number of seconds since the epoch. On other systems, it
+ * may be the calculated number of seconds since last reboot or so.
+ *
+ * @param t Internal system ticks.
+ *
+ * @return  The number of seconds that has passed since a specific reference
+ *          point (seconds since epoch on POSIX).
+ */
+coap_time_t coap_ticks_to_rt(coap_tick_t t);
 
 /**
  * Returns @c 1 if and only if @p a is less than @p b where less is defined on a

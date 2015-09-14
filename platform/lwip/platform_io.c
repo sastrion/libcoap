@@ -1,14 +1,10 @@
-/* coap_io_lwip.h -- Network I/O functions for libcoap on lwIP
- *
- * Copyright (C) 2012,2014 Olaf Bergmann <bergmann@tzi.org>
- *               2014 chrysn <chrysn@fsfe.org>
- *
- * This file is part of the CoAP library libcoap. Please see
- * README for terms of use.
- */
+#include "coap_io.h"
 
 #include "platform_io.h"
+#include <lwip/pbuf.h>
+#include <lwip/udp.h>
 
+#include "debug.h"
 #include "mem.h"
 #include "coap_config.h"
 #include "coap_io.h"
