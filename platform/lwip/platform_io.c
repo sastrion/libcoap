@@ -7,10 +7,11 @@
  * README for terms of use.
  */
 
+#include "platform_io.h"
+
 #include "mem.h"
 #include "coap_config.h"
 #include "coap_io.h"
-#include "coap_lwip_io.h"
 
 void
 coap_packet_populate_endpoint(coap_packet_t *packet, coap_endpoint_t *target) {
