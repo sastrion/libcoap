@@ -66,7 +66,7 @@ typedef struct coap_resource_t {
                                   *   been notified of the last change */
   unsigned int observable:1;     /**< can be observed */
   unsigned int cacheable:1;      /**< can be cached */
-  unsigned int dynamic:1;          /**< should be freed */
+  unsigned int dynamic:1;        /**< should be freed */
 
   /**
    * Used to store handlers for the four coap methods @c GET, @c POST, @c PUT,
@@ -151,7 +151,7 @@ void coap_delete_all_resources(coap_context_t *context);
  */
 void coap_delete_resource_by_pattern(coap_context_t *context, const char *pattern);
 
-/** 
+/**
  * Registers a new attribute with the given @p resource. As the
  * attributes str fields will point to @p name and @p val the
  * caller must ensure that these pointers are valid during the

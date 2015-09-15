@@ -118,11 +118,6 @@ coap_queue_t *coap_peek_next( coap_context_t *context );
 coap_queue_t *coap_pop_next( coap_context_t *context );
 
 /**
- * Creates a new coap_context_t object that will hold the CoAP stack status.
- */
-coap_context_t *coap_new_context(const coap_address_t *listen_addr);
-
-/**
  * Returns a new message id and updates @p context->message_id accordingly. The
  * message id is returned in network byte order to make it easier to read in
  * tracing tools.
@@ -305,7 +300,7 @@ coap_tid_t coap_retransmit(coap_context_t *context, coap_queue_t *node);
  * returned and a new node with the parsed PDU is added to the receive queue in
  * the specified context object.
  */
-int coap_read(coap_context_t *context);
+int coap_read(coap_context_t *context, coap_endpoint_t *ep);
 
 /**
  * Parses and interprets a CoAP message with context @p ctx. This function

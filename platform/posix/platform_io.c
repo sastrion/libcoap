@@ -9,7 +9,7 @@
 #define SOL_IP IPPROTO_IP
 #endif
 
-#define SIN6(A) ((struct sockaddr_in6 *)(A)) 
+#define SIN6(A) ((struct sockaddr_in6 *)(A))
 
 #if !defined(HAVE_NETINET_IN_H)
 /* define struct in6_pktinfo and struct in_pktinfo if not available
@@ -27,12 +27,10 @@ struct in_pktinfo {
 };
 #endif
 
-ssize_t
+static ssize_t
 coap_network_send(struct coap_context_t *context,
                   const coap_endpoint_t *local_interface,
-                  const coap_address_t *dst,
-                  unsigned char *data,
-                  size_t datalen) {
+                  const coap_address_t *dst, const coap_pdu_t *pdu) {
 
   struct coap_endpoint_t *ep = (struct coap_endpoint_t *)local_interface;
 
@@ -41,10 +39,12 @@ coap_network_send(struct coap_context_t *context,
   struct msghdr mhdr;
   struct iovec iov[1];
 
+  (void)context;
+
   assert(local_interface);
 
-  iov[0].iov_base = data;
-  iov[0].iov_len = datalen;
+  iov[0].iov_base = pdu->hdr;
+  iov[0].iov_len = pdu->length;
 
   memset(&mhdr, 0, sizeof(struct msghdr));
   mhdr.msg_name = (void *)&dst->addr;
@@ -138,7 +138,7 @@ coap_packet_copy_source(coap_packet_t *packet, coap_address_t *target)
   memcpy(target, &packet->src, sizeof(coap_address_t));
 }
 
-ssize_t
+static ssize_t
 coap_network_read(coap_endpoint_t *ep, coap_packet_t **packet) {
   ssize_t len = -1;
   char msg_control[CMSG_LEN(sizeof(struct sockaddr_storage))];

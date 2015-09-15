@@ -3,7 +3,7 @@
  * Copyright (C) 2010--2015 Olaf Bergmann <bergmann@tzi.org>
  *
  * This file is part of the CoAP library libcoap. Please see
- * README for terms of use. 
+ * README for terms of use.
  */
 
 #include "coap_config.h"
@@ -189,7 +189,7 @@ coap_delete_node(coap_queue_t *node) {
     return 0;
 
   coap_delete_pdu(node->pdu);
-  coap_free_node(node);
+  coap_free_type(COAP_NODE, node);
 
   return 1;
 }
@@ -245,14 +245,14 @@ coap_pop_next( coap_context_t *context ) {
 
 #ifdef COAP_DEFAULT_WKC_HASHKEY
 /** Checks if @p Key is equal to the pre-defined hash key for.well-known/core. */
-int
+static int
 is_wkc(coap_key_t k) {
   return (memcmp(k, COAP_DEFAULT_WKC_HASHKEY, sizeof(coap_key_t)) == 0);
 }
 #else
 /* Implements a singleton to store a hash key for the .wellknown/core
  * resources. */
-int
+static int
 is_wkc(coap_key_t k) {
   static coap_key_t wkc;
   static unsigned char _initialized = 0;
@@ -363,7 +363,7 @@ coap_send_error(coap_context_t *context, coap_pdu_t *request,
     result = coap_send(context, local_interface, dst, response);
     coap_delete_pdu(response);
   }
-  
+
   return result;
 }
 
@@ -377,7 +377,7 @@ coap_send_message_type(coap_context_t *context,
   coap_tid_t result = COAP_INVALID_TID;
 
   if (request) {
-    response = coap_pdu_init(type, 0, request->hdr->id, sizeof(coap_pdu_t)); 
+    response = coap_pdu_init(type, 0, request->hdr->id, sizeof(coap_pdu_t));
     if (response) {
       result = coap_send(context, local_interface, dst, response);
       coap_delete_pdu(response);
@@ -527,12 +527,12 @@ coap_retransmit(coap_context_t *context, coap_queue_t *node) {
 void coap_dispatch(coap_context_t *context, coap_queue_t *rcvd);
 
 int
-coap_read(coap_context_t *ctx) {
+coap_read(coap_context_t *ctx, coap_endpoint_t *ep) {
   ssize_t bytes_read = -1;
   coap_packet_t *packet;
   int result = -1;		/* the value to be returned */
 
-  bytes_read = ctx->endpoint->network_read(ctx->endpoint, &packet);
+  bytes_read = ep->network_read(ep, &packet);
 
   if (bytes_read < 0) {
     //warn("coap_read: recvfrom");

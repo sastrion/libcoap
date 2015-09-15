@@ -39,8 +39,9 @@ typedef enum {
 #define min(a,b) ((a) < (b) ? (a) : (b))
 #endif
 
+#include <stdio.h>
 /** Returns a textual description of the message type @p t. */
-static const char *
+static inline const char *
 msg_type_string(uint8_t t) {
   static const char * const types[] = { "CON", "NON", "ACK", "RST", "???" };
 
@@ -48,7 +49,7 @@ msg_type_string(uint8_t t) {
 }
 
 /** Returns a textual description of the method or response code. */
-static const char *
+static inline const char *
 msg_code_string(uint8_t c) {
   static const char * const methods[] = { "0.00", "GET", "POST", "PUT", "DELETE", "PATCH" };
   static char buf[5];
