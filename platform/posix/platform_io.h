@@ -23,31 +23,9 @@
 
 #include <errno.h>
 
-/**
- * Abstraction of virtual endpoint that can be attached to coap_context_t. The
- * tuple (handle, addr) must uniquely identify this endpoint.
- */
-typedef struct coap_endpoint_t {
-  int fd;       /**< on POSIX systems */
-  coap_address_t addr; /**< local interface address */
-  int ifindex;
-  int flags;
-  coap_network_read_t network_read;
-  coap_network_send_t network_send;
-} coap_endpoint_t;
+#include "address.h"
 
-struct coap_packet_t {
-  coap_if_handle_t hnd;     /**< the interface handle */
-  coap_address_t src;       /**< the packet's source address */
-  coap_address_t dst;       /**< the packet's destination address */
-  const coap_endpoint_t *interface;
-
-  int ifindex;
-  void *session;            /**< opaque session data */
-
-  size_t length;            /**< length of payload */
-  unsigned char payload[];  /**< payload */
-};
-
+#define PLATFORM_ENDPOINT_PROPERTIES \
+  int fd;
 
 #endif /* _PLATFORM_IO_H_ */

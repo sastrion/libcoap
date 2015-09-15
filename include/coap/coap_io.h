@@ -28,18 +28,21 @@
 #define COAP_ENDPOINT_NOSEC 0x00
 #define COAP_ENDPOINT_DTLS  0x01
 
+#include "pdu.h"
 #include "platform_io.h"
 
-struct coap_address_t;
 struct coap_context_t;
-struct coap_packet_t;
-struct coap_endpoint_t;
+typedef struct coap_context_t coap_context_t;
 
+struct coap_packet_t;
 typedef struct coap_packet_t coap_packet_t;
 
-struct coap_endpoint_t *coap_new_endpoint(const struct coap_address_t *addr, int flags);
+struct coap_endpoint_t;
+typedef struct coap_endpoint_t coap_endpoint_t;
 
-void coap_free_endpoint(struct coap_endpoint_t *ep);
+coap_endpoint_t *coap_new_endpoint(const coap_address_t *addr, int flags);
+
+void coap_free_endpoint(coap_endpoint_t *ep);
 
 /**
  * Function interface for data transmission. This function returns the number of
@@ -53,9 +56,9 @@ void coap_free_endpoint(struct coap_endpoint_t *ep);
  * @return                 The number of bytes written on success, or a value
  *                         less than zero on error.
  */
-typedef ssize_t (*coap_network_send_t)(struct coap_context_t *context,
-                          const struct coap_endpoint_t *local_interface,
-                          const struct coap_address_t *dst, const coap_pdu_t *pdu);
+typedef ssize_t (*coap_network_send_t)(coap_context_t *context,
+                          const coap_endpoint_t *local_interface,
+                          const coap_address_t *dst, const coap_pdu_t *pdu);
 
 /**
  * Function interface for reading data. This function returns the number of
@@ -70,7 +73,32 @@ typedef ssize_t (*coap_network_send_t)(struct coap_context_t *context,
  * @return       The number of bytes received on success, or a value less than
  *               zero on error.
  */
-typedef ssize_t (*coap_network_read_t)(struct coap_endpoint_t *ep, coap_packet_t **packet);
+typedef ssize_t (*coap_network_read_t)(coap_endpoint_t *ep, coap_packet_t **packet);
+
+/**
+ * Abstraction of virtual endpoint that can be attached to coap_context_t. The
+ * tuple (handle, addr) must uniquely identify this endpoint.
+ */
+struct coap_endpoint_t {
+  coap_address_t addr; /**< local interface address */
+  int ifindex;
+  int flags;
+  coap_network_read_t network_read;
+  coap_network_send_t network_send;
+  PLATFORM_ENDPOINT_PROPERTIES
+};
+
+struct coap_packet_t {
+  coap_address_t src;       /**< the packet's source address */
+  coap_address_t dst;       /**< the packet's destination address */
+  const coap_endpoint_t *interface;
+
+  int ifindex;
+  void *session;            /**< opaque session data */
+
+  size_t length;            /**< length of payload */
+  unsigned char payload[];  /**< payload */
+};
 
 #ifndef coap_mcast_interface
 # define coap_mcast_interface(Local) 0
@@ -91,12 +119,12 @@ void coap_free_packet(coap_packet_t *packet);
  * This is usually used to copy a packet's data into a node's local_if member.
  */
 void coap_packet_populate_endpoint(coap_packet_t *packet,
-                                   struct coap_endpoint_t *target);
+                                   coap_endpoint_t *target);
 
 /**
  * Given an incoming packet, copy its source address into an address struct.
  */
-void coap_packet_copy_source(coap_packet_t *packet, struct coap_address_t *target);
+void coap_packet_copy_source(coap_packet_t *packet, coap_address_t *target);
 
 /**
  * Given a packet, set msg and msg_len to an address and length of the packet's

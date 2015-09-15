@@ -106,7 +106,7 @@ coap_add_token(coap_pdu_t *pdu, size_t len, const unsigned char *data) {
     return 0;
 
   pdu->hdr->token_length = len;
-  if (len)
+  if (len) {
     memcpy(pdu->hdr->token, data, len);
   }
   pdu->max_delta = 0;

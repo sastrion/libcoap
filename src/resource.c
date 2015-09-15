@@ -350,11 +350,12 @@ coap_hash_request_uri(const coap_pdu_t *request, coap_key_t key) {
 void
 coap_add_resource(coap_context_t *context, coap_resource_t *resource) {
   RESOURCES_ADD(context->resources, resource);
-  if (!resource->dynamic) {
-    resource->uri.length = strlen(resource->uri.s);
-    coap_hash_path(resource->uri.s, resource->uri.length, resource->key);
-  }
-  debug("Added resource 0x%02x%02x%02x%02x\n", resource->key[0], resource->key[1], resource->key[2], resource->key[3]);
+// FIXME don't know what this dynamic stuff is, but it ain't working
+//  if (!resource->dynamic) {
+//    resource->uri.length = strlen(resource->uri.s);
+//    coap_hash_path(resource->uri.s, resource->uri.length, resource->key);
+//  }
+//  debug("Added resource 0x%02x%02x%02x%02x\n", resource->key[0], resource->key[1], resource->key[2], resource->key[3]);
 }
 
 static void

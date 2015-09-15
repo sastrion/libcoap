@@ -477,7 +477,6 @@ coap_send_confirmed(coap_context_t *context,
   if (node == context->sendqueue) {
     coap_timer_set(context->retransmit_timer, node->t);
   }
-#endif /* WITH_CONTIKI */
 
   return node->id;
 }
@@ -528,12 +527,12 @@ coap_retransmit(coap_context_t *context, coap_queue_t *node) {
 void coap_dispatch(coap_context_t *context, coap_queue_t *rcvd);
 
 int
-coap_read(coap_context_t *ctx, coap_endpoint_t *endpoint) {
+coap_read(coap_context_t *ctx) {
   ssize_t bytes_read = -1;
   coap_packet_t *packet;
   int result = -1;		/* the value to be returned */
 
-  bytes_read = endpoint->network_read(endpoint, &packet);
+  bytes_read = ctx->endpoint->network_read(ctx->endpoint, &packet);
 
   if (bytes_read < 0) {
     //warn("coap_read: recvfrom");
@@ -596,8 +595,6 @@ coap_handle_message(coap_context_t *ctx,
   }
 
   coap_ticks(&node->t);
-
-  node->local_if = *packet->interface;
 
   coap_packet_populate_endpoint(packet, &node->local_if);
   coap_packet_copy_source(packet, &node->remote);

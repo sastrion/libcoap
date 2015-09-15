@@ -32,6 +32,7 @@
 #include "block.h"
 #include "net.h"
 #include "coap_timer.h"
+#include "coap_io.h"
 
 #ifdef WITH_CONTIKI // TODO Should be more abstracted. E.g. CONTEXT_SINGLETON
 unsigned char initialized = 0;
@@ -126,9 +127,6 @@ coap_new_context(
   if (c->endpoint == NULL) {
     goto onerror;
   }
-
-  c->network_send = coap_network_send;
-  c->network_read = coap_network_read;
 
 # ifndef WITHOUT_OBSERVE
   c->notify_timer = coap_new_timer(notify_timer_cb, (void *)c);

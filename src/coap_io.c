@@ -15,14 +15,14 @@
 #include "platform_io.h"
 
 size_t
-coap_get_max_packetlength(const coap_packet_t *packet UNUSED_PARAM) {
+coap_get_max_packetlength(const coap_packet_t *packet) {
   return COAP_MAX_PDU_SIZE;
 }
 
 void
 coap_packet_populate_endpoint(coap_packet_t *packet, coap_endpoint_t *target)
 {
-  target->handle = packet->interface->handle;
+  *target = *packet->interface;
   memcpy(&target->addr, &packet->dst, sizeof(target->addr));
   target->ifindex = packet->ifindex;
   target->flags = 0; /* FIXME */

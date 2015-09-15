@@ -59,7 +59,7 @@ libcoap_@LIBCOAP_API_VERSION@_la_SOURCES = \
   src/block.c \
   src/coap_io.c \
   src/coap_context.c \
-  src/debug.c \
+  src/coap_debug.c \
   src/encode.c \
   src/hashkey.c \
   src/mem.c \
