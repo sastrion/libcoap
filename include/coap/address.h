@@ -36,8 +36,6 @@
 
 #include "platform_address.h"
 
-typedef struct coap_address_t coap_address_t;
-
 /**
  * Compares given address objects @p a and @p b. This function returns @c 1 if
  * addresses are equal, @c 0 otherwise. The parameters @p a and @p b must not be
