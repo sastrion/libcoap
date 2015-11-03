@@ -1064,6 +1064,29 @@ no_response(coap_pdu_t *request, coap_pdu_t *response) {
 #define WANT_WKC(Pdu,Key)					\
   (((Pdu)->hdr->code == COAP_REQUEST_GET) && is_wkc(Key))
 
+/**
+ * Convert a binary data to ASCI encoded hex.
+ *
+ * @param[in]  data to convert
+ * @param[out] s string where ASCII endoded hex is stored
+ *
+ * @return a pointer to the resulting null-terminated string, same as parameter str.
+ */
+static char* _htos(const void *data, uint8_t dlen, char *str, uint8_t slen)
+{
+  static const char* HEXES = "0123456789abcdef";
+  uint8_t *p = (uint8_t *)data;
+  uint8_t i = 0;
+
+  for (; i < dlen && 2*i < slen; i++) {
+    str[i*2] = HEXES[p[i] >> 4];
+    str[i*2+1] = HEXES[p[i] & 0x0F];
+  }
+
+  str[i*2] = 0;
+  return str;
+}
+
 static void
 handle_request(coap_context_t *context, coap_queue_t *node) {
   coap_method_handler_t h = NULL;
@@ -1073,6 +1096,13 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
   coap_key_t key;
 
   coap_option_filter_clear(opt_filter);
+
+  char toks[17]; // 2*8 (max token length + 1)
+  _htos(node->pdu->hdr->token, node->pdu->hdr->token_length, toks, sizeof(toks));
+
+  char *uri = coap_get_uri(node->pdu);
+  debug("%s %s [tk:%s]", msg_code_string(node->pdu->hdr->code), uri, toks);
+  coap_free_type(COAP_STRING, uri);
 
   /* try to find the resource from the request URI */
   coap_hash_request_uri(node->pdu, key);
@@ -1163,8 +1193,10 @@ handle_request(coap_context_t *context, coap_queue_t *node) {
 	}
       }
 
-      h(context, resource, &node->local_if, &node->remote,
-	node->pdu, &token, response);
+      h(context, resource, &node->local_if, &node->remote, node->pdu, &token,
+        response);
+
+      debug("%s %d [tk:%s]", msg_type_string(response->hdr->type), COAP_RESPONSE_CODE2(response->hdr->code), toks);
 
       if (!no_response(node->pdu, response)) {
       if (observe && ((COAP_RESPONSE_CLASS(response->hdr->code) > 2)
