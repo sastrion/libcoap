@@ -85,7 +85,9 @@ struct coap_endpoint_t {
   int flags;
   coap_network_read_t network_read;
   coap_network_send_t network_send;
+#ifdef PLATFORM_ENDPOINT_PROPERTIES
   PLATFORM_ENDPOINT_PROPERTIES
+#endif
 };
 
 struct coap_packet_t {
