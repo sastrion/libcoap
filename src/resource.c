@@ -250,10 +250,13 @@ coap_resource_init(const unsigned char *uri, size_t len, int flags) {
     coap_hash_path(r->uri.s, r->uri.length, r->key);
 
     r->flags = flags;
+    r->dynamic = 1;
+    r->pdata = NULL;
+
   } else {
     debug("coap_resource_init: no memory left\n");
   }
-  
+
   return r;
 }
 
@@ -338,19 +341,18 @@ coap_hash_request_uri(const coap_pdu_t *request, coap_key_t key) {
   coap_option_setb(filter, COAP_OPTION_URI_PATH);
 
   coap_option_iterator_init((coap_pdu_t *)request, &opt_iter, filter);
-  while ((option = coap_option_next(&opt_iter)))
+  while ((option = coap_option_next(&opt_iter)) != NULL)
     coap_hash(COAP_OPT_VALUE(option), COAP_OPT_LENGTH(option), key);
 }
 
 void
 coap_add_resource(coap_context_t *context, coap_resource_t *resource) {
   RESOURCES_ADD(context->resources, resource);
-// FIXME don't know what this dynamic stuff is, but it ain't working
-//  if (!resource->dynamic) {
-//    resource->uri.length = strlen(resource->uri.s);
-//    coap_hash_path(resource->uri.s, resource->uri.length, resource->key);
-//  }
-//  debug("Added resource 0x%02x%02x%02x%02x\n", resource->key[0], resource->key[1], resource->key[2], resource->key[3]);
+  if (!resource->dynamic) {
+    resource->uri.length = strlen(resource->uri.s);
+    coap_hash_path(resource->uri.s, resource->uri.length, resource->key);
+  }
+  debug("Added resource 0x%02x%02x%02x%02x\n", resource->key[0], resource->key[1], resource->key[2], resource->key[3]);
 }
 
 static void
