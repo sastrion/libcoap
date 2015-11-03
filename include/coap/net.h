@@ -36,10 +36,6 @@ extern "C" {
 #include <sys/time.h>
 #endif
 
-#ifdef WITH_LWIP
-#include <lwip/ip_addr.h>
-#endif
-
 #include "option.h"
 #include "coap_io.h"
 #include "prng.h"
