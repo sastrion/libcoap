@@ -27,7 +27,12 @@
 
 void
 coap_platform_init(void) {
-  prng_init(time(NULL));
+  coap_timer_init();
+  coap_clock_init();
+
+  coap_tick_t now;
+  coap_ticks(&now);
+  prng_init((ptrdiff_t)now);
 }
 
 void

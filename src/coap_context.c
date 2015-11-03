@@ -64,14 +64,6 @@ static void retransmit_timer_cb(void *data) {
 
 coap_context_t*
 coap_new_context(void) {
-
-  //FIXME: move this to coap_platform_init()?
-  coap_timer_init();
-  coap_clock_init();
-  coap_tick_t now;
-  coap_ticks(&now);
-  prng_init((ptrdiff_t)now);
-
   coap_context_t *c = coap_malloc_type(COAP_CONTEXT, sizeof( coap_context_t ) );
   if (!c) {
     coap_log(LOG_EMERG, "coap_init: malloc:\n");
