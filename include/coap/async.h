@@ -32,14 +32,14 @@ typedef void (*coap_async_handler_t)(coap_context_t *ctx, coap_pdu_t *response, 
  */
 typedef struct coap_async_state_t {
   unsigned char flags;  /**< holds the flags to control behaviour */
- 
+
   /**
    * Holds the internal time when the object was registered with a
    * resource. This field will be updated whenever
    * coap_register_async() is called for a specific resource.
    */
   coap_tick_t created;
- 
+
   /**
    * This field can be used to register opaque application data with the
    * asynchronous state object.
@@ -54,7 +54,7 @@ typedef struct coap_async_state_t {
   coap_tid_t id;                   /**< transaction id */
   struct coap_async_state_t *next; /**< internally used for linking */
   coap_address_t peer;             /**< the peer to notify */
-  coap_endpoint_t *ep;             /**< endpoint to use to send async message */
+  const coap_endpoint_t *ep;             /**< endpoint to use to send async message */
   size_t tokenlen;                 /**< length of the token */
   unsigned char token[];           /**< the token to use in a response */
 } coap_async_state_t;
