@@ -76,6 +76,11 @@ typedef struct coap_context_t {
    * resources and will be updated when notifications are created.
    */
   unsigned int observe;
+  /**
+   * This field can be used to register opaque application data with the
+   * context object.
+   */
+  void *appdata;
 
   coap_response_handler_t response_handler;
 } coap_context_t;
