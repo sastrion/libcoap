@@ -240,12 +240,7 @@ coap_resource_t *
 coap_resource_init(const unsigned char *uri, size_t len, int flags) {
   coap_resource_t *r;
 
-#ifdef WITH_LWIP
-  r = (coap_resource_t *)memp_malloc(MEMP_COAP_RESOURCE);
-#endif
-#ifndef WITH_LWIP
   r = (coap_resource_t *)coap_malloc_type(COAP_RESOURCE, sizeof(coap_resource_t));
-#endif
   if (r) {
     memset(r, 0, sizeof(coap_resource_t));
 
