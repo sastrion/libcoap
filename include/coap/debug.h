@@ -107,6 +107,8 @@ void coap_show_pdu(const coap_pdu_t *);
 
 struct coap_address_t;
 size_t coap_print_addr(const struct coap_address_t *, unsigned char *, size_t);
+void coap_print_request(coap_pdu_t *pdu);
+void coap_print_response(coap_pdu_t *pdu);
 
 #else
 
