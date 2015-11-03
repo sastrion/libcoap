@@ -100,6 +100,10 @@ struct coap_packet_t {
 
   size_t length;            /**< length of payload */
   unsigned char payload[];  /**< payload */
+
+#ifdef PLATFORM_PACKET_PROPERTIES
+  PLATFORM_PACKET_PROPERTIES
+#endif
 };
 
 #ifndef coap_mcast_interface
