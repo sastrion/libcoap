@@ -82,19 +82,6 @@ coap_new_context(void) {
   /* initialize message id */
   prng((unsigned char *)&c->message_id, sizeof(unsigned short));
 
-  /* register the critical options that we know */
-  coap_register_option(c, COAP_OPTION_IF_MATCH);
-  coap_register_option(c, COAP_OPTION_URI_HOST);
-  coap_register_option(c, COAP_OPTION_IF_NONE_MATCH);
-  coap_register_option(c, COAP_OPTION_URI_PORT);
-  coap_register_option(c, COAP_OPTION_URI_PATH);
-  coap_register_option(c, COAP_OPTION_URI_QUERY);
-  coap_register_option(c, COAP_OPTION_ACCEPT);
-  coap_register_option(c, COAP_OPTION_PROXY_URI);
-  coap_register_option(c, COAP_OPTION_PROXY_SCHEME);
-  coap_register_option(c, COAP_OPTION_BLOCK2);
-  coap_register_option(c, COAP_OPTION_BLOCK1);
-
 #if 0
   c->endpoint = coap_new_endpoint(listen_addr, COAP_ENDPOINT_NOSEC);
   if (c->endpoint == NULL) {
