@@ -536,6 +536,10 @@ coap_retransmit(coap_context_t *context, coap_queue_t *node) {
   }
 #endif /* WITHOUT_OBSERVE */
 
+  if (context->response_handler) {
+    context->response_handler(context, &node->local_if, &node->remote, node->pdu, NULL, node->id);
+  }
+
   /* And finally delete the node */
   coap_delete_node( node );
   return COAP_INVALID_TID;
