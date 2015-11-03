@@ -22,7 +22,7 @@
 #include "async.h"
 
 coap_async_state_t *
-coap_register_async(coap_context_t *context, coap_address_t *peer,
+coap_register_async(coap_context_t *context, const coap_endpoint_t *endpoint, coap_address_t *peer,
 		    coap_pdu_t *request, unsigned char flags, void *data) {
   coap_async_state_t *s;
   coap_tid_t id;
@@ -55,6 +55,7 @@ coap_register_async(coap_context_t *context, coap_address_t *peer,
   s->appdata = data;
 
   memcpy(&s->peer, peer, sizeof(coap_address_t));
+  s->ep = endpoint;
 
   if (request->hdr->token_length) {
     s->tokenlen = request->hdr->token_length;
