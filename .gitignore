@@ -73,3 +73,7 @@ include/coap/coap.h
 tests/.deps
 tests/testdriver
 tests/*.o
+
+# IDE roject files
+.project
+.cproject
