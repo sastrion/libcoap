@@ -19,6 +19,8 @@
 
 #ifndef WITHOUT_ASYNC
 
+typedef void (*coap_async_handler_t)(coap_context_t *ctx, coap_pdu_t *response, void *appdata);
+
 /**
  * @defgroup coap_async Asynchronous Messaging
  * @{
@@ -43,6 +45,11 @@ typedef struct coap_async_state_t {
    * asynchronous state object.
    */
   void *appdata;
+  /**
+   * Resource handler which is called when asynchronous reply is ready.
+   */
+  void (*handler)(coap_context_t *ctx, coap_pdu_t *response, void *appdata);
+
   unsigned short message_id;       /**< id of last message seen */
   coap_tid_t id;                   /**< transaction id */
   struct coap_async_state_t *next; /**< internally used for linking */
@@ -60,6 +67,8 @@ typedef struct coap_async_state_t {
 
 /** release application data on destruction */
 #define COAP_ASYNC_RELEASE_DATA  0x08
+/** resource is ready */
+#define COAP_ASYNC_READY     0x10
 
 /**
  * Allocates a new coap_async_state_t object and fills its fields according to

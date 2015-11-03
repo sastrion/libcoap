@@ -91,7 +91,7 @@ coap_remove_async(coap_context_t *context, coap_tid_t id,
 
 void
 coap_free_async(coap_async_state_t *s) {
-  if (s && (s->flags & COAP_ASYNC_RELEASE_DATA) != 0)
+  if (s && s->appdata && (s->flags & COAP_ASYNC_RELEASE_DATA) != 0)
     coap_free(s->appdata);
   coap_free(s);
 }
