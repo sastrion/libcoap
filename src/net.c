@@ -265,9 +265,8 @@ is_wkc(coap_key_t k) {
 #endif
 
 int
-coap_option_check_critical(coap_context_t *ctx,
-			   coap_pdu_t *pdu,
-			   coap_opt_filter_t unknown) {
+coap_option_check_critical(coap_context_t *ctx, coap_pdu_t *pdu,
+                           coap_opt_filter_t unknown) {
 
   coap_opt_iterator_t opt_iter;
   int ok = 1;
@@ -275,25 +274,41 @@ coap_option_check_critical(coap_context_t *ctx,
   coap_option_iterator_init(pdu, &opt_iter, COAP_OPT_ALL);
 
   while (coap_option_next(&opt_iter)) {
-
-    /* The following condition makes use of the fact that
-     * coap_option_getb() returns -1 if type exceeds the bit-vector
-     * filter. As the vector is supposed to be large enough to hold
-     * the largest known option, we know that everything beyond is
-     * bad.
-     */
-    if (opt_iter.type & 0x01 &&
-	coap_option_getb(ctx->known_options, opt_iter.type) < 1) {
-      debug("unknown critical option %d\n", opt_iter.type);
-
-      ok = 0;
-
-      /* When opt_iter.type is beyond our known option range,
-       * coap_option_setb() will return -1 and we are safe to leave
-       * this loop. */
-      if (coap_option_setb(unknown, opt_iter.type) == -1)
-	break;
+    if (!(opt_iter.type & 0x01)) {
+      continue;
     }
+    /* first check the built-in critical options */
+    switch (opt_iter.type) {
+      case COAP_OPTION_IF_MATCH:
+      case COAP_OPTION_URI_HOST:
+      case COAP_OPTION_IF_NONE_MATCH:
+      case COAP_OPTION_URI_PORT:
+      case COAP_OPTION_URI_PATH:
+      case COAP_OPTION_URI_QUERY:
+      case COAP_OPTION_ACCEPT:
+      case COAP_OPTION_PROXY_URI:
+      case COAP_OPTION_PROXY_SCHEME:
+      case COAP_OPTION_BLOCK2:
+      case COAP_OPTION_BLOCK1:
+        break;
+      default:
+        if (coap_option_filter_get(ctx->known_options, opt_iter.type) <= 0) {
+          debug("unknown critical option %d\n", opt_iter.type);
+          ok = 0;
+
+          /* When opt_iter.type is beyond our known option range,
+           * coap_option_setb() will return -1 and we are safe to leave
+           * this loop. */
+          if (coap_option_setb(unknown, opt_iter.type) == -1)
+            break;
+          /* When opt_iter.type is beyond our known option range,
+           * coap_option_filter_set() will return -1 and we are safe to leave
+           * this loop. */
+          if (coap_option_filter_set(unknown, opt_iter.type) == -1) {
+            break;
+          }
+        }
+      }
   }
 
   return ok;
