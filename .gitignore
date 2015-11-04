@@ -77,3 +77,4 @@ tests/*.o
 # IDE roject files
 .project
 .cproject
+.settings/
