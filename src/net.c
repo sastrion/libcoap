@@ -617,8 +617,6 @@ coap_handle_message(coap_context_t *ctx, coap_packet_t *packet) {
 
   coap_ticks(&node->t);
 
-  node->local_if = *packet->interface;
-
   coap_packet_populate_endpoint(packet, &node->local_if);
   coap_packet_copy_source(packet, &node->remote);
 
