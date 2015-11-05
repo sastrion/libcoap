@@ -38,8 +38,7 @@ coap_register_async(coap_context_t *context, const coap_endpoint_t *endpoint, co
   }
 
   /* store information for handling the asynchronous task */
-  s = (coap_async_state_t *)coap_malloc(sizeof(coap_async_state_t) +
-					request->hdr->token_length);
+  s = (coap_async_state_t *)coap_malloc_type(COAP_ASYNC_STATE, sizeof(coap_async_state_t) + request->hdr->token_length);
   if (!s) {
     coap_log(LOG_CRIT, "coap_register_async: insufficient memory\n");
     return NULL;
@@ -54,8 +53,8 @@ coap_register_async(coap_context_t *context, const coap_endpoint_t *endpoint, co
 
   s->appdata = data;
 
+  memcpy(&s->ep, endpoint, sizeof(coap_endpoint_t));
   memcpy(&s->peer, peer, sizeof(coap_address_t));
-  s->ep = endpoint;
 
   if (request->hdr->token_length) {
     s->tokenlen = request->hdr->token_length;
@@ -63,6 +62,8 @@ coap_register_async(coap_context_t *context, const coap_endpoint_t *endpoint, co
   }
 
   memcpy(&s->id, &id, sizeof(coap_tid_t));
+
+  debug("Registered async state [id:%d ep:%p appdata:%p]", s->id, s->ep, s->appdata);
 
   coap_touch_async(s);
 
@@ -92,9 +93,12 @@ coap_remove_async(coap_context_t *context, coap_tid_t id,
 
 void
 coap_free_async(coap_async_state_t *s) {
-  if (s && s->appdata && (s->flags & COAP_ASYNC_RELEASE_DATA) != 0)
-    coap_free(s->appdata);
-  coap_free(s);
+  if (s && s->appdata && (s->flags & COAP_ASYNC_RELEASE_DATA) != 0) {
+	  debug("Free app data");
+	  coap_free(s->appdata);
+  }
+  debug("Free async");
+  coap_free_type(COAP_ASYNC_STATE, s);
 }
 
 #else

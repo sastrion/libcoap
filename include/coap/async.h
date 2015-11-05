@@ -54,7 +54,7 @@ typedef struct coap_async_state_t {
   coap_tid_t id;                   /**< transaction id */
   struct coap_async_state_t *next; /**< internally used for linking */
   coap_address_t peer;             /**< the peer to notify */
-  const coap_endpoint_t *ep;             /**< endpoint to use to send async message */
+  coap_endpoint_t ep;              /**< endpoint to use to send async response */
   size_t tokenlen;                 /**< length of the token */
   unsigned char token[];           /**< the token to use in a response */
 } coap_async_state_t;

@@ -33,6 +33,7 @@ typedef enum {
   COAP_TIMER,
   COAP_OPTION,
   COAP_SUBSCRIPTION,
+  COAP_ASYNC_STATE,
 } coap_memory_tag_t;
 
 /**
