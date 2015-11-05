@@ -39,7 +39,6 @@ coap_pdu_clear(coap_pdu_t *pdu, size_t size) {
   pdu->data = NULL;
 
   memset(pdu->hdr, 0, size);
-  pdu->max_size = size;
   pdu->hdr->version = COAP_DEFAULT_VERSION;
   pdu->hdr->token_length = 0;
 }
