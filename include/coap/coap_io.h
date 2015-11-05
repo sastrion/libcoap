@@ -98,12 +98,12 @@ struct coap_packet_t {
   int ifindex;
   void *session;            /**< opaque session data */
 
-  size_t length;            /**< length of payload */
-  unsigned char payload[];  /**< payload */
-
 #ifdef PLATFORM_PACKET_PROPERTIES
   PLATFORM_PACKET_PROPERTIES
 #endif
+
+  size_t length;            /**< length of payload */
+  unsigned char payload[];  /**< payload */
 };
 
 #ifndef coap_mcast_interface
