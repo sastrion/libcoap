@@ -31,6 +31,7 @@ typedef long coap_tick_diff_t;
 /** Use ms resolution on POSIX systems */
 #define COAP_TICKS_PER_SECOND 1000
 
+#if 0
 /**
  * Sets @p t to the internal time with COAP_TICKS_PER_SECOND resolution.
  */
@@ -53,5 +54,6 @@ static inline void coap_ticks(coap_tick_t *t) {
 static inline coap_time_t coap_ticks_to_rt(coap_tick_t t) {
   return t / COAP_TICKS_PER_SECOND;
 }
+#endif
 
 #endif /* INCLUDE_COAP_COAP_POSIX_H_ */

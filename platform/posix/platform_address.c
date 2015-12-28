@@ -1,6 +1,8 @@
 #include "coap_config.h"
-
 #include "address.h"
+
+#include <netdb.h>
+#include <stdio.h>
 
 int
 coap_address_isany(const coap_address_t *a) {
@@ -63,5 +65,41 @@ coap_address_init(coap_address_t *addr) {
   assert(addr);
   memset(addr, 0, sizeof(coap_address_t));
   addr->size = sizeof(addr->addr);
+}
+
+int
+coap_address(const char *host, unsigned short port, coap_address_t *addr)
+{
+	int s;
+	struct addrinfo hints;
+	struct addrinfo *result, *rp;
+	char ports[6];
+
+	sprintf(ports, "%d", port);
+
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_UNSPEC; /* Allow IPv4 or IPv6 */
+	hints.ai_socktype = SOCK_DGRAM; /* Coap uses UDP */
+	hints.ai_flags = AI_PASSIVE | AI_NUMERICSERV | AI_ALL;
+
+	s = getaddrinfo(host, ports, &hints, &result);
+	if (s != 0) {
+		fprintf(stderr, "getaddrinfo: %s\n", gai_strerror(s));
+		return 0;
+	}
+
+	/* iterate through results until success */
+	for (rp = result; rp != NULL; rp = rp->ai_next) {
+		if (rp->ai_addrlen <= sizeof(addr->addr)) {
+			coap_address_init(addr);
+			addr->size = rp->ai_addrlen;
+			memcpy(&addr->addr, rp->ai_addr, rp->ai_addrlen);
+			break;
+		}
+	}
+
+finish:
+	freeaddrinfo(result);
+	return 1;
 }
 

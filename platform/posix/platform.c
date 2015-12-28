@@ -8,6 +8,8 @@
 #include <stddef.h>
 #include <coap/mem.h>
 #include <coap/prng.h>
+#include "coap_timer.h"
+#include "coap_config.h"
 
 #ifdef HAVE_ASSERT_H
 #include <assert.h>

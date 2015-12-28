@@ -14,6 +14,7 @@
 
 #include "platform_io.h"
 
+#if 0
 size_t
 coap_get_max_packetlength(const coap_packet_t *packet) {
   return COAP_MAX_PDU_SIZE;
@@ -45,5 +46,6 @@ void coap_free_packet(coap_packet_t *packet)
 {
   coap_free_type(COAP_PACKET, packet);
 }
+#endif
 
 

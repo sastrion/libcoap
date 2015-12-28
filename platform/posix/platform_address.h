@@ -15,4 +15,6 @@ struct coap_address_t {
   } addr;
 };
 
+typedef struct coap_address_t coap_address_t;
+
 #endif /* _PLATFORM_ADDRESS_H_ */

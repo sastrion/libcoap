@@ -625,18 +625,17 @@ coap_handle_message(coap_context_t *ctx, coap_packet_t *packet) {
 
 #ifndef NDEBUG
   if (LOG_DEBUG <= coap_get_log_level()) {
-#ifndef INET6_ADDRSTRLEN
-#define INET6_ADDRSTRLEN 40
-#endif
     /** @FIXME get debug to work again **
+		  #ifndef INET6_ADDRSTRLEN
+		#define INET6_ADDRSTRLEN 40
+		#endif
      unsigned char addr[INET6_ADDRSTRLEN+8], localaddr[INET6_ADDRSTRLEN+8];
      if (coap_print_addr(remote, addr, INET6_ADDRSTRLEN+8) &&
      coap_print_addr(&packet->dst, localaddr, INET6_ADDRSTRLEN+8) )
      debug("** received %d bytes from %s on interface %s:\n",
      (int)msg_len, addr, localaddr);
-
      */
-    coap_show_pdu(node->pdu);
+	  coap_show_pdu(node->pdu);
   }
 #endif
 

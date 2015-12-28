@@ -145,6 +145,8 @@ char *coap_response_phrase(unsigned char code);
 #define COAP_RESPONSE_OK                 COAP_RESPONSE_200
 #define COAP_RESPONSE_201                COAP_RESPONSE_CODE(201)  /* 2.01 Created */
 #define COAP_RESPONSE_CREATED            COAP_RESPONSE_201
+#define COAP_RESPONSE_202                COAP_RESPONSE_CODE(202)  /* 2.02 Deleted */
+#define COAP_RESPONSE_DELETED            COAP_RESPONSE_202
 #define COAP_RESPONSE_203                COAP_RESPONSE_CODE(203)  /* 2.03 Valid */
 #define COAP_RESPONSE_VALID              COAP_RESPONSE_203
 #define COAP_RESPONSE_204                COAP_RESPONSE_CODE(204)  /* 2.04 Valid */
